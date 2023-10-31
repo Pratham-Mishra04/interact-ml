@@ -22,7 +22,7 @@ cursor.execute('SELECT * from projects')
 
 projects=cursor.fetchall()
 
-writer = csv.writer(open("projects.csv", 'w'))
+writer = csv.writer(open("data/projects.csv", 'w'))
 writer.writerow(["id", "title", "tagline", "description", "userID", "tags", "category"])
 
 for p in projects:
