@@ -23,9 +23,13 @@ class ReqBody(BaseModel):
 def ping(input_text: str):
     return {"pongs":input_text}
 
-@app.post('/')
+@app.post('/projects/similar')
 def similar_projects(body:ReqBody):
-    return project_controllers.similar_projects(body)
+    return project_controllers.similar(body)
+
+@app.post('/projects/recommend')
+def recommend_projects(body:ReqBody):
+    return project_controllers.recommend(body)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

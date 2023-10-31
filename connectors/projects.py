@@ -18,7 +18,7 @@ except:
 
 cursor = conn.cursor()
 
-cursor.execute('SELECT * from projects')
+cursor.execute('SELECT id, title, tagline, description, user_id, tags, category from projects')
 
 projects=cursor.fetchall()
 
@@ -26,5 +26,70 @@ writer = csv.writer(open("data/projects.csv", 'w'))
 writer.writerow(["id", "title", "tagline", "description", "userID", "tags", "category"])
 
 for p in projects:
-    id, title, tagline, description, userID, tags, category = (p[0], p[1], p[2], p[5], p[7], p[9], p[13])
+    id, title, tagline, description, userID, tags, category = p
     writer.writerow([id, title, tagline, description, userID, tags, category])
+
+user_project2rating = {}
+
+# Views
+cursor.execute('SELECT user_id, project_id from last_vieweds')
+views=cursor.fetchall()
+
+for i in views:
+    userID, projectID = i
+    user_project2rating[userID+' '+projectID]=1
+
+# Likes
+cursor.execute('SELECT user_id, project_id from likes WHERE project_id IS NOT NULL')
+likes=cursor.fetchall()
+
+for i in likes:
+    userID, projectID = i
+    user_project2rating[userID+' '+projectID]=2
+
+# Messages
+cursor.execute('SELECT user_id, project_id from messages WHERE project_id IS NOT NULL')
+messages=cursor.fetchall()
+
+for i in messages:
+    userID, projectID = i
+    user_project2rating[userID+' '+projectID]=3
+
+# Bookmarks
+cursor.execute('''
+            SELECT pb.user_id, pbi.project_id
+            FROM project_bookmarks pb
+            JOIN project_bookmark_items pbi
+            ON pb.id = pbi.project_bookmark_id;
+            ''')
+bookmark_items=cursor.fetchall()
+
+for i in bookmark_items:
+    userID, projectID = i
+    user_project2rating[userID+' '+projectID]=4
+
+# # Dislikes
+# cursor.execute('SELECT user_id, project_id from dislikes WHERE project_id IS NOT NULL')
+# reports=cursor.fetchall()
+
+# for i in reports:
+#     userID, projectID = i
+#     user_project2rating[userID+' '+projectID]=-1
+
+# Reports
+cursor.execute('SELECT user_id, project_id from reports WHERE project_id IS NOT NULL')
+reports=cursor.fetchall()
+
+for i in reports:
+    userID, projectID = i
+    user_project2rating[userID+' '+projectID]=-3
+
+
+writer = csv.writer(open("data/project_scores.csv", 'w'))
+writer.writerow(["user_id", "project_id", "score"])
+
+for i in user_project2rating:
+    user_id = i.split(' ')[0]
+    project_id = i.split(' ')[1]
+    score = user_project2rating[i]
+    writer.writerow([user_id, project_id, score])
