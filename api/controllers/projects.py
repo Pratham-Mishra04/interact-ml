@@ -1,7 +1,9 @@
 import pandas as pd
+import numpy as np
 import pickle
 from keras.models import load_model
 from tensorflow import newaxis
+import json
 
 #* Similar Projects
 def find_similar(project_id):
@@ -25,23 +27,20 @@ def similar(body):
     }
 
 #* Project Recommendations
-model = load_model('../../models/projects/recommendations.h5')
+model = load_model('../models/projects/recommendations.h5')
 
-with open('../../models/projects/user_embeddings.json', 'rb') as f:
-    user_embeddings = pickle.load(f)
-
-with open('../../models/projects/movie_embeddings.json', 'rb') as f:
-    project_embeddings = pickle.load(f)
-
-with open('../../models/projects/user_bias_embeddings.json', 'rb') as f:
-    user_bias_embeddings = pickle.load(f)
-
-with open('../../models/projects/movie_bias_embeddings.json', 'rb') as f:
-    project_bias_embeddings = pickle.load(f)
+with open('../models/projects/user_embeddings.json') as f:
+    user_embeddings = json.load(f)
+with open('../models/projects/project_embeddings.json') as f:
+    project_embeddings = json.load(f)
+with open('../models/projects/user_bias_embeddings.json') as f:
+    user_bias_embeddings = json.load(f)
+with open('../models/projects/project_bias_embeddings.json') as f:
+    project_bias_embeddings = json.load(f)
 
 def predict_score(user_id, project_id):
-    user_embedding = user_embeddings[user_id]
-    project_embedding = project_embeddings[project_id]
+    user_embedding = np.array(user_embeddings[user_id])
+    project_embedding = np.array(project_embeddings[project_id])
 
     # Passing user embedding and movie embedding through the concat layer
     concatenated_embeddings = model.get_layer('concat')([user_embedding, project_embedding])
@@ -50,8 +49,8 @@ def predict_score(user_id, project_id):
     x = model.get_layer('dense1')(concatenated_embeddings)
     x = model.get_layer('dense2')(x)
 
-    user_bias_embedding = user_bias_embeddings[user_id]
-    project_bias_embedding = project_bias_embeddings[project_id]
+    user_bias_embedding = np.array(user_bias_embeddings[user_id])
+    project_bias_embedding = np.array(project_bias_embeddings[project_id])
 
     user_bias_embedding = user_bias_embedding[:, newaxis]
     project_bias_embedding = project_bias_embedding[:, newaxis]
@@ -71,9 +70,11 @@ def predict_score(user_id, project_id):
 def recommend(body):
     df = pd.read_csv('../data/project_scores.csv')
     user_ratings = df[df['user_id'] == body.id]
-    user_ratings = df[df['project_id'] != 1]
+    user_ratings = df[df['score'] != 1]
     recommendation = df[~df['project_id'].isin(user_ratings['project_id'])][['project_id']].drop_duplicates()
     recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['project_id']), axis=1)
     
     final_rec = recommendation.sort_values(by='score_predict', ascending=False)
-    return final_rec['score_predict'].values
+    return {
+        'recommendations':final_rec['project_id'].values.tolist()
+    }
