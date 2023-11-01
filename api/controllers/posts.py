@@ -48,7 +48,6 @@ def predict_score(user_id, post_id):
 def recommend(body):
     df = pd.read_csv('../data/post_scores.csv')
     user_ratings = df[df['user_id'] == body.id]
-    user_ratings = df[df['score'] != 1]
     recommendation = df[~df['post_id'].isin(user_ratings['post_id'])][['post_id']].drop_duplicates()
     recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['post_id']), axis=1)
     

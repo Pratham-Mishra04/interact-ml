@@ -12,11 +12,11 @@ def find_similar(project_id):
         with open('../models/projects/similarities.pickle', 'rb') as f:
             similarities=pickle.load(f)
 
-        movie_index = df[df['id'].str.lower()==project_id.lower()].index[0]
-        distances = similarities[movie_index]
-        movie_objs = sorted(list(enumerate(distances)), reverse=True, key=lambda x:x[1])[1:6]
+        project_index = df[df['id'].str.lower()==project_id.lower()].index[0]
+        distances = similarities[project_index]
+        project_objs = sorted(list(enumerate(distances)), reverse=True, key=lambda x:x[1])[1:6]
 
-        return [df.iloc[i[0]].id for i in movie_objs]
+        return [df.iloc[i[0]].id for i in project_objs]
     except:
         return []
     

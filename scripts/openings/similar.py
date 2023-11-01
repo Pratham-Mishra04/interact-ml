@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 
 # Importing Data
-df = pd.read_csv('../../data/projects.csv')
+df = pd.read_csv('../../data/openings.csv')
 
 # Converting to Lists
-df['tagline']=df['tagline'].apply(lambda x:x.split())
+df['title']=df['title'].apply(lambda x:x.split())
 df['description']=df['description'].apply(lambda x:x.split())
-df['category']=df['category'].apply(lambda x:x.split())
+df['project_id']=df['project_id'].apply(lambda x:[x])
 
 import ast
 
@@ -20,7 +20,7 @@ def parse(obj):
 
 df['tags']=df['tags'].apply(parse)
 
-df['keys']=df['tagline']+df['description']+df['tags']+df['category']
+df['keys']=df['title']+df['description']+df['tags']+df['project_id']
 
 # import ssl
 # try:
@@ -71,5 +71,5 @@ similarities = cosine_similarity(vectors)
 # Saving the Similarities
 import pickle
 
-with open('../../models/projects/similarities.pickle', 'wb') as f:
+with open('../../models/openings/similarities.pickle', 'wb') as f:
     pickle.dump(similarities, f)
