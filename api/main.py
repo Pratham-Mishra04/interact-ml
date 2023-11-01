@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import controllers.projects as project_controllers
+import controllers.posts as post_controllers
 
 app = FastAPI()
 
@@ -30,6 +31,10 @@ def similar_projects(body:ReqBody):
 @app.post('/projects/recommend')
 def recommend_projects(body:ReqBody):
     return project_controllers.recommend(body)
+
+@app.post('/posts/recommend')
+def recommend_projects(body:ReqBody):
+    return post_controllers.recommend(body)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
