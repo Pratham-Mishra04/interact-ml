@@ -70,7 +70,7 @@ def predict_score(user_id, project_id):
 def recommend(body):
     df = pd.read_csv('../data/project_scores.csv')
     user_ratings = df[df['user_id'] == body.id]
-    user_ratings = df[df['score'] != 1]
+    user_ratings = user_ratings[user_ratings['score'] != 1]
     recommendation = df[~df['project_id'].isin(user_ratings['project_id'])][['project_id']].drop_duplicates()
     recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['project_id']), axis=1)
     
