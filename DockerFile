@@ -22,6 +22,13 @@ EXPOSE 3030
 # Define environment variable for log file path
 ENV LOG_FILE_PATH /app/logs/training.log
 
+RUN chmod +x /app/trainer.py
+
+# Run trainer.py immediately when the container starts
+RUN /usr/bin/python3 /app/trainer.py
+
+RUN service cron start
+
 # Add a cron job to run trainer.py every 6 hours
 # RUN echo "0 */6 * * * /usr/bin/python3 /app/trainer.py" > /etc/cron.d/trainer-cron
 
