@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  interact-network:
+    driver: bridge
+
 services:
   ml-api:
     container_name: interact-ml
@@ -9,13 +13,7 @@ services:
     ports:
       - "3030:3030"
     volumes:
-      - models:/app/models
-      - logs:/app/logs
-
-volumes:
-  models:
-    name: models-ml
-    driver: local
-  logs:
-    name: logs-ml
-    driver: local
+      - /models:/app/models
+      - /logs:/app/logs
+    networks:
+      - interact-network
