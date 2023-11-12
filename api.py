@@ -5,6 +5,11 @@ import uvicorn
 import controllers.projects as project_controllers
 import controllers.posts as post_controllers
 import controllers.openings as opening_controllers
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -42,4 +47,4 @@ def recommend_posts(body:ReqBody):
     return post_controllers.recommend(body)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT"), reload=True)

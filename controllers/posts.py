@@ -5,15 +5,15 @@ from tensorflow import newaxis
 import json
 
 #* Post Recommendations
-model = load_model('../models/posts/recommendations.h5')
+model = load_model('models/posts/recommendations.h5')
 
-with open('../models/posts/user_embeddings.json') as f:
+with open('models/posts/user_embeddings.json') as f:
     user_embeddings = json.load(f)
-with open('../models/posts/post_embeddings.json') as f:
+with open('models/posts/post_embeddings.json') as f:
     post_embeddings = json.load(f)
-with open('../models/posts/user_bias_embeddings.json') as f:
+with open('models/posts/user_bias_embeddings.json') as f:
     user_bias_embeddings = json.load(f)
-with open('../models/posts/post_bias_embeddings.json') as f:
+with open('models/posts/post_bias_embeddings.json') as f:
     post_bias_embeddings = json.load(f)
 
 def predict_score(user_id, post_id):
@@ -46,7 +46,7 @@ def predict_score(user_id, post_id):
     return predicted_rating.numpy()
 
 def recommend(body):
-    df = pd.read_csv('../data/post_scores.csv')
+    df = pd.read_csv('data/post_scores.csv')
     user_ratings = df[df['user_id'] == body.id]
     recommendation = df[~df['post_id'].isin(user_ratings['post_id'])][['post_id']].drop_duplicates()
     recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['post_id']), axis=1)

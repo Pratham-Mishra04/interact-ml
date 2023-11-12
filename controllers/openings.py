@@ -1,13 +1,11 @@
 import pandas as pd
 import pickle
-from keras.models import load_model
-from tensorflow import newaxis
 
 #* Similar Openings
 def find_similar(opening_id):
     try:
-        df = pd.read_csv('../data/openings.csv')
-        with open('../models/openings/similarities.pickle', 'rb') as f:
+        df = pd.read_csv('data/openings.csv')
+        with open('models/openings/similarities.pickle', 'rb') as f:
             similarities=pickle.load(f)
 
         opening_index = df[df['id'].str.lower()==opening_id.lower()].index[0]

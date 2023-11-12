@@ -8,8 +8,8 @@ import json
 #* Similar Projects
 def find_similar(project_id):
     try:
-        df = pd.read_csv('../data/projects.csv')
-        with open('../models/projects/similarities.pickle', 'rb') as f:
+        df = pd.read_csv('data/projects.csv')
+        with open('models/projects/similarities.pickle', 'rb') as f:
             similarities=pickle.load(f)
 
         project_index = df[df['id'].str.lower()==project_id.lower()].index[0]
@@ -27,15 +27,15 @@ def similar(body):
     }
 
 #* Project Recommendations
-model = load_model('../models/projects/recommendations.h5')
+model = load_model('models/projects/recommendations.h5')
 
-with open('../models/projects/user_embeddings.json') as f:
+with open('models/projects/user_embeddings.json') as f:
     user_embeddings = json.load(f)
-with open('../models/projects/project_embeddings.json') as f:
+with open('models/projects/project_embeddings.json') as f:
     project_embeddings = json.load(f)
-with open('../models/projects/user_bias_embeddings.json') as f:
+with open('models/projects/user_bias_embeddings.json') as f:
     user_bias_embeddings = json.load(f)
-with open('../models/projects/project_bias_embeddings.json') as f:
+with open('models/projects/project_bias_embeddings.json') as f:
     project_bias_embeddings = json.load(f)
 
 def predict_score(user_id, project_id):
@@ -68,13 +68,17 @@ def predict_score(user_id, project_id):
     return predicted_rating.numpy()
 
 def recommend(body):
-    df = pd.read_csv('../data/project_scores.csv')
+    df = pd.read_csv('data/project_scores.csv')
     user_ratings = df[df['user_id'] == body.id]
     user_ratings = user_ratings[user_ratings['score'] != 1]
     recommendation = df[~df['project_id'].isin(user_ratings['project_id'])][['project_id']].drop_duplicates()
-    recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['project_id']), axis=1)
-    
-    final_rec = recommendation.sort_values(by='score_predict', ascending=False)
-    return {
-        'recommendations':final_rec['project_id'].values.tolist()
-    }
+    try: # User Key Error in Embeddings
+        recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['project_id']), axis=1)
+        final_rec = recommendation.sort_values(by='score_predict', ascending=False)
+        return {
+            'recommendations':final_rec['project_id'].values.tolist()
+        }
+    except:
+        return {
+        'recommendations':[]
+        }
