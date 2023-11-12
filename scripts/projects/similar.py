@@ -1,75 +1,86 @@
 import pandas as pd
 import numpy as np
+import logging
 
-# Importing Data
-df = pd.read_csv('../../data/projects.csv')
+logging.basicConfig(filename="logs/training.log", level=logging.INFO, format='%(asctime)s %(message)s', filemode='a')
+training_logger = logging.getLogger('training_logger')
 
-# Converting to Lists
-df['tagline']=df['tagline'].apply(lambda x:x.split())
-df['description']=df['description'].apply(lambda x:x.split())
-df['category']=df['category'].apply(lambda x:x.split())
+training_logger.info("Projects-Similar: Training Started")
 
-import ast
+try:
+    # Importing Data
+    df = pd.read_csv('data/projects.csv')
 
-def parse(obj):
-    try:
-        obj = ast.literal_eval(obj)
-        return obj
-    except:
-        return obj
+    # Converting to Lists
+    df['tagline']=df['tagline'].apply(lambda x:x.split())
+    df['description']=df['description'].apply(lambda x:x.split())
+    df['category']=df['category'].apply(lambda x:x.split())
 
-df['tags']=df['tags'].apply(parse)
+    import ast
 
-df['keys']=df['tagline']+df['description']+df['tags']+df['category']
+    def parse(obj):
+        try:
+            obj = ast.literal_eval(obj)
+            return obj
+        except:
+            return obj
 
-# import ssl
-# try:
-#     _create_unverified_https_context = ssl._create_unverified_context
-# except AttributeError:
-#     pass
-# else:
-#     ssl._create_default_https_context = _create_unverified_https_context
+    df['tags']=df['tags'].apply(parse)
 
-# nltk.download("punkt")
-# nltk.download("stopwords")
-# nltk.download("averaged_perceptron_tagger")
+    df['keys']=df['tagline']+df['description']+df['tags']+df['category']
 
-# Stemming
-from nltk.stem.porter import PorterStemmer
-from nltk.corpus import stopwords
-from nltk import pos_tag, word_tokenize
-import string
+    # import ssl
+    # try:
+    #     _create_unverified_https_context = ssl._create_unverified_context
+    # except AttributeError:
+    #     pass
+    # else:
+    #     ssl._create_default_https_context = _create_unverified_https_context
 
-ps=PorterStemmer()
+    # nltk.download("punkt")
+    # nltk.download("stopwords")
+    # nltk.download("averaged_perceptron_tagger")
 
-custom_stopwords = ["need", "want", "this", "that", "fast"]
+    # Stemming
+    from nltk.stem.porter import PorterStemmer
+    from nltk.corpus import stopwords
+    from nltk import pos_tag, word_tokenize
+    import string
 
-def stem(x):
-    L = []
-    tagged_tokens = pos_tag(x)
-    for token, pos in tagged_tokens:
-        token=token.lower()
-        if pos != 'JJ' and pos != 'JJR' and pos != 'JJS' and token not in custom_stopwords:  # Remove adjectives
-            stemmed_token = ps.stem(token)
-            if stemmed_token not in L and stemmed_token not in stopwords.words("english") and stemmed_token not in string.punctuation:
-                L.append(stemmed_token)
-    return " ".join(L)
+    ps=PorterStemmer()
 
-df.loc[:,'keys']=df['keys'].apply(stem)
-df=df[['id','title','keys']]
+    custom_stopwords = ["need", "want", "this", "that", "fast"]
 
-# Calculating Similarities
-from sklearn.feature_extraction.text import CountVectorizer
+    def stem(x):
+        L = []
+        tagged_tokens = pos_tag(x)
+        for token, pos in tagged_tokens:
+            token=token.lower()
+            if pos != 'JJ' and pos != 'JJR' and pos != 'JJS' and token not in custom_stopwords:  # Remove adjectives
+                stemmed_token = ps.stem(token)
+                if stemmed_token not in L and stemmed_token not in stopwords.words("english") and stemmed_token not in string.punctuation:
+                    L.append(stemmed_token)
+        return " ".join(L)
 
-cv = CountVectorizer(max_features=5000)
-vectors = cv.fit_transform(df['keys']).toarray()
+    df.loc[:,'keys']=df['keys'].apply(stem)
+    df=df[['id','title','keys']]
 
-from sklearn.metrics.pairwise import cosine_similarity
+    # Calculating Similarities
+    from sklearn.feature_extraction.text import CountVectorizer
 
-similarities = cosine_similarity(vectors)
+    cv = CountVectorizer(max_features=5000)
+    vectors = cv.fit_transform(df['keys']).toarray()
 
-# Saving the Similarities
-import pickle
+    from sklearn.metrics.pairwise import cosine_similarity
 
-with open('../../models/projects/similarities.pickle', 'wb') as f:
-    pickle.dump(similarities, f)
+    similarities = cosine_similarity(vectors)
+
+    # Saving the Similarities
+    import pickle
+
+    with open('models/projects/similarities.pickle', 'wb') as f:
+        pickle.dump(similarities, f)
+
+    training_logger.info("Projects-Similar: Training Completed")
+except Exception as e :
+    training_logger.info(f"Projects-Similar: An error occurred- {str(e)}")

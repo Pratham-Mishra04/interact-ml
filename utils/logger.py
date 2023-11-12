@@ -8,3 +8,6 @@ warn_logger = logging.getLogger('warn_logger')
 
 logging.basicConfig(filename="logs/error.log", level=logging.ERROR, format='%(asctime)s %(message)s', filemode='w')
 error_logger = logging.getLogger('error_logger')
+
+logging.basicConfig(filename="logs/training.log", level=logging.INFO, format='%(asctime)s %(message)s', filemode='w')
+training_logger = logging.getLogger('training_logger')
