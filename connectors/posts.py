@@ -14,11 +14,15 @@ training_logger = logging.getLogger('training_logger')
 training_logger.info("Posts-Connector: Data Fetching Started")
 
 try:
-    conn = psycopg2.connect(database=os.getenv("DB_NAME"),
-                            user=os.getenv("DB_USER"),
-                            password=os.getenv("DB_PASS"),
-                            host=os.getenv("DB_HOST"),
-                            port=os.getenv("DB_PORT"))
+    try:
+        conn = psycopg2.connect(database=os.getenv("DB_NAME"),
+                                user=os.getenv("DB_USER"),
+                                password=os.getenv("DB_PASS"),
+                                host=os.getenv("DB_HOST"),
+                                port=os.getenv("DB_PORT"))
+        print("Connected to DB")
+    except Exception as e:
+        print("Not Connected to DB", e)
 
     cursor = conn.cursor()
 

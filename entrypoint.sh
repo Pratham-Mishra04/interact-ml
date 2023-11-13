@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# RUN THIS -  docker network connect interact_backend-network interact-ml
+
 # Start FastAPI using uvicorn in the background
 # uvicorn api:app --host 0.0.0.0 --port 3030 &
 

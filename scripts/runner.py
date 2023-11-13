@@ -11,7 +11,9 @@ os.chdir(os.path.join(script_dir, '..'))
 script_folders = ['openings', 'projects', 'posts' ]
 script_files = ['recommendation.py', 'similar.py']
 
-logging.basicConfig(filename="logs/training.log", level=logging.INFO, format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="logs/training.log", level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filemode='a')
 training_logger = logging.getLogger('training_logger')
 
 training_logger.info("-------Running Training Scripts-------")
