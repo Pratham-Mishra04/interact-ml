@@ -1,9 +1,5 @@
 version: '3.8'
 
-networks:
-  interact-network:
-    driver: bridge
-
 services:
   ml-api:
     container_name: interact-ml
@@ -12,8 +8,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3030:3030"
-    volumes:
-      - /models:/app/models
-      - /logs:/app/logs
-    networks:
-      - interact-network
+    # volumes:
+    #   - ./models:/app/models
+    #   - ./logs:/app/logs

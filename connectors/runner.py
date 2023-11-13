@@ -17,8 +17,8 @@ training_logger.info("-------Running Connector Scripts-------")
 
 for file in script_files:
     try:
-        print(f"Executing file {file}")
+        training_logger.info(f"Executing file {file}")
         script_path = os.path.join('connectors', file)
         subprocess.run(['python3', script_path])
     except Exception as e:
-        print(f"Error executing file {file}: {e}")
+        training_logger.error(f"Error executing file {file}: {e}")

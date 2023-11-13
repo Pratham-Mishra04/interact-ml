@@ -6,7 +6,9 @@ import logging
 
 load_dotenv()
 
-logging.basicConfig(filename="logs/training.log", level=logging.INFO, format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="logs/training.log", level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filemode='a')
 training_logger = logging.getLogger('training_logger')
 
 training_logger.info("Openings-Connector: Data Fetching Started")
@@ -91,4 +93,4 @@ try:
 
     training_logger.info("Openings-Connector: Data Fetching Finished")
 except Exception as e:
-    training_logger.info(f"Openings-Connector: An error occurred- {str(e)}")
+    training_logger.error(f"Openings-Connector: An error occurred- {str(e)}")

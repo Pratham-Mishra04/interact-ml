@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import logging
 
-logging.basicConfig(filename="logs/training.log", level=logging.INFO, format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="logs/training.log", level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filemode='a')
 training_logger = logging.getLogger('training_logger')
 
 training_logger.info("Projects-Similar: Training Started")
@@ -84,4 +86,4 @@ try:
 
     training_logger.info("Projects-Similar: Training Completed")
 except Exception as e :
-    training_logger.info(f"Projects-Similar: An error occurred- {str(e)}")
+    training_logger.error(f"Projects-Similar: An error occurred- {str(e)}")

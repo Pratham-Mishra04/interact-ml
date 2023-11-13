@@ -16,27 +16,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Make port 80 available to the world outside this container
+# Make port 3030 available to the world outside this container
 EXPOSE 3030
-
-# Define environment variable for log file path
-ENV LOG_FILE_PATH /app/logs/training.log
 
 RUN chmod +x /app/trainer.py
 
 # Run trainer.py immediately when the container starts
 RUN /usr/bin/python3 /app/trainer.py
 
-RUN service cron start
-
-# Add a cron job to run trainer.py every 6 hours
-# RUN echo "0 */6 * * * /usr/bin/python3 /app/trainer.py" > /etc/cron.d/trainer-cron
-
-# Add a cron job to run trainer.py every minute
-RUN echo "* * * * * /usr/bin/python3 /app/trainer.py" > /etc/cron.d/trainer-cron
-
 # Apply the cron job
-RUN crontab /etc/cron.d/trainer-cron
+RUN chmod +x /app/cron
+RUN crontab /app/cron
 
 # Copy the entrypoint script into the container at /app
 COPY entrypoint.sh /app/
@@ -45,4 +35,6 @@ COPY entrypoint.sh /app/
 RUN chmod +x /app/entrypoint.sh
 
 # Run the entrypoint script
-CMD ["/app/entrypoint.sh"]
+# CMD ["/app/entrypoint.sh"]
+
+CMD ["cron", "-f"]

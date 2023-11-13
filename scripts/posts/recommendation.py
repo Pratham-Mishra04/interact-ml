@@ -3,7 +3,9 @@ import numpy as np
 import json
 import logging
 
-logging.basicConfig(filename="logs/training.log", level=logging.INFO, format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="logs/training.log", level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filemode='a')
 training_logger = logging.getLogger('training_logger')
 
 training_logger.info("Posts-Recommendation: Training Started")
@@ -121,4 +123,4 @@ try:
 
     training_logger.info("Posts-Recommendation: Training Completed")
 except Exception as e :
-    training_logger.info(f"Posts-Recommendation: An error occurred- {str(e)}")
+    training_logger.error(f"Posts-Recommendation: An error occurred- {str(e)}")
