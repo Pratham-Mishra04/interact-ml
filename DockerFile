@@ -35,6 +35,6 @@ COPY entrypoint.sh /app/
 RUN chmod +x /app/entrypoint.sh
 
 # Run the entrypoint script
-# CMD ["/app/entrypoint.sh"]
+CMD ["/app/entrypoint.sh"]
 
-CMD ["cron", "-f"]
+# CMD ["cron", "-f"]

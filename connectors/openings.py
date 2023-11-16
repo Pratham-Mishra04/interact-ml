@@ -30,7 +30,7 @@ try:
 
     openings=cursor.fetchall()
 
-    writer = csv.writer(open("data/recommendations.csv", 'w'))
+    writer = csv.writer(open("data/openings.csv", 'w'))
     writer.writerow(["id", "project_id", "title", "description", "tags"])
 
     for o in openings:

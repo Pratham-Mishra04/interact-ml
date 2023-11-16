@@ -25,6 +25,8 @@ app.add_middleware(
 
 class ReqBody(BaseModel):
     id:str
+    limit: int = 4  # Default value is 5 if not provided
+    page: int = 1 
 
 @app.get("/ping/{input_text}")
 def ping(input_text: str):

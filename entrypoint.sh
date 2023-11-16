@@ -2,11 +2,11 @@
 
 # RUN THIS -  docker network connect interact_backend-network interact-ml
 
-# Start FastAPI using uvicorn in the background
-# uvicorn api:app --host 0.0.0.0 --port 3030 &
-
 # Run cron in the foreground
-cron
+cron -f &
+
+# Start FastAPI using uvicorn in the background
+uvicorn api:app --host 0.0.0.0 --port 3030
 
 # Keep the script running to prevent the container from exiting
 tail -f /dev/null

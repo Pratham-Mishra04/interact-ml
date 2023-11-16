@@ -6,7 +6,7 @@ from tensorflow import newaxis
 import json
 
 #* Similar Projects
-def find_similar(project_id):
+def find_similar(project_id, limit=5, page=1):
     try:
         df = pd.read_csv('data/projects.csv')
         with open('models/projects/similarities.pickle', 'rb') as f:
@@ -14,14 +14,24 @@ def find_similar(project_id):
 
         project_index = df[df['id'].str.lower()==project_id.lower()].index[0]
         distances = similarities[project_index]
-        project_objs = sorted(list(enumerate(distances)), reverse=True, key=lambda x:x[1])[1:6]
+
+        # Apply Pagination
+        start_index = (page - 1) * limit
+        if start_index >= len(distances):
+            return []
+
+        end_index = start_index + limit
+        if end_index > len(distances):
+            end_index = len(distances)
+            
+        project_objs = sorted(enumerate(distances), reverse=True, key=lambda x: x[1])[start_index:end_index]
 
         return [df.iloc[i[0]].id for i in project_objs]
     except:
         return []
     
 def similar(body):
-    recommendations = find_similar(body.id)
+    recommendations = find_similar(body.id, limit=body.limit, page=body.page)
     return {
         'recommendations':recommendations
     }

@@ -1,0 +1,3 @@
+# RUN THIS
+
+sudo docker network connect interact_backend-network interact-ml 

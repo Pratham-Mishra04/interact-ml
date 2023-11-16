@@ -1,0 +1,14 @@
+2023-11-16 12:02:17,349 - INFO - -------------TRAINING INITIATED-------------
+2023-11-16 12:02:17,349 - INFO - Executing file runner.py in connectors
+2023-11-16 12:02:17,349 - INFO - connectors/runner.py
+2023-11-16 12:02:17,702 - INFO - Finished Executing file runner.py in connectors
+2023-11-16 12:02:17,703 - INFO - Executing file runner.py in scripts
+2023-11-16 12:02:17,703 - INFO - scripts/runner.py
+2023-11-16 12:02:34,813 - INFO - Finished Executing file runner.py in scripts
+2023-11-16 12:04:54,141 - INFO - -------------TRAINING INITIATED-------------
+2023-11-16 12:04:54,141 - INFO - Executing file runner.py in connectors
+2023-11-16 12:04:54,141 - INFO - connectors/runner.py
+2023-11-16 12:04:54,405 - INFO - Finished Executing file runner.py in connectors
+2023-11-16 12:04:54,405 - INFO - Executing file runner.py in scripts
+2023-11-16 12:04:54,405 - INFO - scripts/runner.py
+2023-11-16 12:05:02,968 - INFO - Finished Executing file runner.py in scripts
