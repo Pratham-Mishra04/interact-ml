@@ -1,6 +1,20 @@
 {
     "cSpell.words": [
         "blurhash",
-        "fastapi"
+        "dotenv",
+        "fastapi",
+        "iloc",
+        "isin",
+        "levelname",
+        "newaxis",
+        "nunique",
+        "psycopg",
+        "punkt",
+        "regularizers",
+        "relu",
+        "stopwords",
+        "toarray",
+        "uvicorn",
+        "Vectorizer"
     ]
 }
