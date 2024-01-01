@@ -14,7 +14,7 @@ load_dotenv()
 
 app = FastAPI()
 
-origins = ["*"]
+origins = [os.getenv("BACKEND_URL")]
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,7 +26,7 @@ app.add_middleware(
 
 class ReqBody(BaseModel):
     id:str
-    limit: int = 4  # Default value is 5 if not provided
+    limit: int = 4
     page: int = 1 
 
 @app.get("/ping/{input_text}")

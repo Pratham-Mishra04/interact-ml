@@ -2,7 +2,7 @@ import subprocess
 import os
 import logging
 
-logging.basicConfig(filename='cron.log', level=logging.DEBUG, 
+logging.basicConfig(filename='logs/cron.log', level=logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     filemode='a')
 

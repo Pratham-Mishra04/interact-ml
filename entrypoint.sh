@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# RUN THIS -  docker network connect interact_backend-network interact-ml
-
 # Run cron in the foreground
 cron -f &
 

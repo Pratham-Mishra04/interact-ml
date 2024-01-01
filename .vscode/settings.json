@@ -10,6 +10,7 @@
         "nunique",
         "psycopg",
         "punkt",
+        "pydantic",
         "regularizers",
         "relu",
         "stopwords",
