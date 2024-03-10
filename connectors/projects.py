@@ -2,14 +2,11 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import csv
-import logging
+from utils import logger
+
+training_logger= logger.get_logger('training_logger')
 
 load_dotenv()
-
-logging.basicConfig(filename="logs/training.log", level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    filemode='a')
-training_logger = logging.getLogger('training_logger')
 
 training_logger.info("Projects-Connector: Data Fetching Started")
 

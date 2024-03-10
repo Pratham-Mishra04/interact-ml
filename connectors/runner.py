@@ -1,6 +1,8 @@
 import subprocess
 import os
-import logging
+from utils import logger
+
+training_logger= logger.get_logger('training_logger')
 
 # Get the path to the directory containing the script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -9,11 +11,6 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(os.path.join(script_dir, '..'))
 
 script_files = ['openings.py', 'projects.py', 'posts.py' ]
-
-logging.basicConfig(filename="logs/training.log", level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    filemode='a')
-training_logger = logging.getLogger('training_logger')
 
 training_logger.info("-------Running Connector Scripts-------")
 

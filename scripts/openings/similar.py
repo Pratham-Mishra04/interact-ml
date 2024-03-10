@@ -1,10 +1,7 @@
 import pandas as pd
-import logging
+from utils import logger
 
-logging.basicConfig(filename="logs/training.log", level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    filemode='a')
-training_logger = logging.getLogger('training_logger')
+training_logger= logger.get_logger('training_logger')
 
 training_logger.info("Openings-Similar: Training Started")
 
