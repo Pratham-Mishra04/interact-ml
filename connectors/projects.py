@@ -2,25 +2,19 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import csv
-from utils import logger
-
-training_logger= logger.get_logger('training_logger')
+import subprocess
 
 load_dotenv()
 
-training_logger.info("Projects-Connector: Data Fetching Started")
+def logger(level , title, description, path):
+    subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
 try:
-
-    try:
-        conn = psycopg2.connect(database=os.getenv("DB_NAME"),
-                                user=os.getenv("DB_USER"),
-                                password=os.getenv("DB_PASS"),
-                                host=os.getenv("DB_HOST"),
-                                port=os.getenv("DB_PORT"))
-        print("Connected to DB")
-    except Exception as e:
-        print("Not Connected to DB", e)
+    conn = psycopg2.connect(database=os.getenv("DB_NAME"),
+                            user=os.getenv("DB_USER"),
+                            password=os.getenv("DB_PASS"),
+                            host=os.getenv("DB_HOST"),
+                            port=os.getenv("DB_PORT"))
 
     cursor = conn.cursor()
 
@@ -38,12 +32,12 @@ try:
     user_project2rating = {}
 
     # Views
-    cursor.execute('SELECT user_id, project_id from last_vieweds')
-    views=cursor.fetchall()
+    # cursor.execute('SELECT user_id, project_id from last_vieweds')
+    # views=cursor.fetchall()
 
-    for i in views:
-        userID, projectID = i
-        user_project2rating[userID+' '+projectID]=1
+    # for i in views:
+    #     userID, projectID = i
+    #     user_project2rating[userID+' '+projectID]=1
 
     # Likes
     cursor.execute('SELECT user_id, project_id from likes WHERE project_id IS NOT NULL')
@@ -100,6 +94,6 @@ try:
         score = user_project2rating[i]
         writer.writerow([user_id, project_id, score])
 
-    training_logger.info("Projects-Connector: Data Fetching Finished")
+    logger("info",f"Training Successful", "Successfully fetched Projects", "connectors/projects.py")
 except Exception as e:
-    training_logger.error(f"Projects-Connector: An error occurred- {str(e)}")
+    logger("error",f"Training Failed", str(e), "connectors/projects.py")

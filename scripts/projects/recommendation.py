@@ -1,11 +1,10 @@
 import pandas as pd
 import numpy as np
 import json
-from utils import logger
+import subprocess
 
-training_logger= logger.get_logger('training_logger')
-
-training_logger.info("Projects-Recommendation: Training Started")
+def logger(level , title, description, path):
+    subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
 try:
     #* Model Building
@@ -118,6 +117,6 @@ try:
     with open('models/projects/project_bias_embeddings.json', 'w') as f:
         json.dump(project_bias_embeddings, f)
         
-    training_logger.info("Projects-Recommendation: Training Completed")
+    logger("info",f"Training Successful", "Successfully Trained Recommended Projects", "scripts/projects/recommendation.py")
 except Exception as e :
-    training_logger.error(f"Projects-Recommendation: An error occurred- {str(e)}")
+    logger("error",f"Training Failed", str(e), "scripts/projects/recommendation.py")

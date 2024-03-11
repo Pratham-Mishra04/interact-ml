@@ -1,9 +1,8 @@
 import pandas as pd
-from utils import logger
+import subprocess
 
-training_logger= logger.get_logger('training_logger')
-
-training_logger.info("Openings-Similar: Training Started")
+def logger(level , title, description, path):
+    subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
 try :
     # Importing Data
@@ -80,6 +79,6 @@ try :
     with open('models/openings/similarities.pickle', 'wb') as f:
         pickle.dump(similarities, f)
 
-    training_logger.info("Openings-Similar: Training Completed")
+    logger("info",f"Training Successful", "Successfully Trained Similar Openings", "scripts/openings/similar.py")
 except Exception as e :
-    training_logger.error(f"Openings-Similar: An error occurred- {str(e)}")
+    logger("error",f"Training Failed", str(e), "scripts/openings/similar.py")
