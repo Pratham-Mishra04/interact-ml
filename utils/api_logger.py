@@ -36,9 +36,9 @@ class LogEntrySchema:
 
 def create_admin_jwt():
     token_claim = jwt.encode({
-        'sub': 'backend',
-        'crt': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-        'exp': (datetime.utcnow() + timedelta(seconds=15.0)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        'sub': 'ml',
+        'crt': datetime.utcnow().timestamp(),
+        'exp': (datetime.utcnow() + timedelta(seconds=15.0)).timestamp()
     }, LOGGER_SECRET, algorithm='HS256')
 
     return token_claim
