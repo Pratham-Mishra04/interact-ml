@@ -7,6 +7,7 @@ import controllers.posts as post_controllers
 import controllers.openings as opening_controllers
 import controllers.image as img_controllers
 import os 
+from typing import List
 
 from dotenv import load_dotenv
 
@@ -29,6 +30,16 @@ class ReqBody(BaseModel):
     limit: int = 4
     page: int = 1 
 
+class ApplicationScoreBody(BaseModel):
+    cover_letter: str
+    profile_topics: List[str]
+    resume_topics: List[str]
+    is_resume_included: bool
+    opening_description_topics: List[str]
+    organization_values_topics: List[str]
+    years_of_experience: int
+
+
 @app.get("/ping/{input_text}")
 def ping(input_text: str):
     return {"pong":input_text}
@@ -40,6 +51,10 @@ async def similar_projects(body:ReqBody):
 @app.post('/openings/similar')
 async def similar_openings(body:ReqBody):
     return opening_controllers.similar(body)
+
+@app.post('/openings/application_score')
+async def application_score(body:ApplicationScoreBody):
+    return opening_controllers.get_application_score(body)
 
 @app.post('/projects/recommend')
 async def recommend_projects(body:ReqBody):
@@ -54,4 +69,4 @@ async def get_blur_hash(image: UploadFile = File(...)):
     return img_controllers.generate_blurhash_data_url(image)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT"), reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT"))
