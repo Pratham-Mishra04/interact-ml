@@ -5,6 +5,7 @@ import uvicorn
 import controllers.projects as project_controllers
 import controllers.posts as post_controllers
 import controllers.openings as opening_controllers
+import controllers.applications as application_controllers
 import controllers.image as img_controllers
 import os 
 from typing import List
@@ -55,6 +56,10 @@ async def similar_openings(body:ReqBody):
 @app.post('/openings/application_score')
 async def application_score(body:ApplicationScoreBody):
     return opening_controllers.get_application_score(body)
+
+@app.post('/openings/application_score2')
+async def application_score_test(body:ApplicationScoreBody):
+    return application_controllers.get_application_score(body)
 
 @app.post('/projects/recommend')
 async def recommend_projects(body:ReqBody):

@@ -1,29 +1,9 @@
-import pandas as pd
 import numpy as np
-import pickle
 from textblob import TextBlob
 from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 from sklearn.metrics.pairwise import cosine_similarity
-
-def similar(body):
-    try:
-        df = pd.read_csv('data/openings.csv')
-        with open('models/openings/similarities.pickle', 'rb') as f:
-            similarities=pickle.load(f)
-
-        opening_index = df[df['id'].str.lower()==body.id.lower()].index[0]
-        distances = similarities[opening_index]
-        opening_objs = sorted(list(enumerate(distances)), reverse=True, key=lambda x:x[1])[1:6]
-
-        return {
-            'recommendations': [df.iloc[i[0]].id for i in opening_objs]
-        }
-    except:
-        return {
-            'recommendations': []
-        }
 
 def get_application_score(body):
     try:
@@ -35,25 +15,39 @@ def get_application_score(body):
         organization_values_topics = body.organization_values_topics
         years_of_experience = body.years_of_experience
 
-        tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-        model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        miniLM_tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        miniLM_model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+
+        bert_tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+        bert_model = AutoModel.from_pretrained('bert-base-uncased')
 
         if len(resume_topics)==0:
             is_resume_included = False
 
         cover_letter_sentiment = TextBlob(cover_letter).sentiment.polarity
 
-        profile_topic_embeddings = get_embeddings(profile_topics, model, tokenizer)
+        profile_topic_embeddings1 = get_embeddings(profile_topics, miniLM_model, miniLM_tokenizer)
+        profile_topic_embeddings2 = get_embeddings(profile_topics, bert_model, bert_tokenizer)
 
         if is_resume_included:
-            resume_topic_embeddings = get_embeddings(resume_topics, model, tokenizer)
+            resume_topic_embeddings1 = get_embeddings(resume_topics, miniLM_model, miniLM_tokenizer)
+            resume_topic_embeddings2 = get_embeddings(resume_topics, bert_model, bert_tokenizer)
 
-        opening_description_topic_embeddings = get_embeddings(opening_description_topics, model, tokenizer)
-        organization_values_topic_embeddings = get_embeddings(organization_values_topics, model, tokenizer)
+        opening_description_topic_embeddings1 = get_embeddings(opening_description_topics, miniLM_model, miniLM_tokenizer)
+        opening_description_topic_embeddings2 = get_embeddings(opening_description_topics, bert_model, bert_tokenizer)
 
-        profile_similarity_score = get_emb_score(profile_topic_embeddings, opening_description_topic_embeddings, organization_values_topic_embeddings)
+        organization_values_topic_embeddings1 = get_embeddings(organization_values_topics, miniLM_model, miniLM_tokenizer)
+        organization_values_topic_embeddings2 = get_embeddings(organization_values_topics, bert_model, bert_tokenizer)
+
+        profile_similarity_score = get_final_emb_score(
+            get_emb_score(profile_topic_embeddings1, opening_description_topic_embeddings1, organization_values_topic_embeddings1, 0.4),
+            get_emb_score(profile_topic_embeddings2, opening_description_topic_embeddings2, organization_values_topic_embeddings2, 0.75)
+        )
         if is_resume_included:
-            resume_similarity_score = get_emb_score(resume_topic_embeddings, opening_description_topic_embeddings, organization_values_topic_embeddings)
+            resume_similarity_score = get_final_emb_score(
+            get_emb_score(resume_topic_embeddings1, opening_description_topic_embeddings1, organization_values_topic_embeddings1, 0.4),
+            get_emb_score(resume_topic_embeddings2, opening_description_topic_embeddings2, organization_values_topic_embeddings2, 0.75)
+        )
         else:
             resume_similarity_score = 0
 
@@ -73,10 +67,7 @@ def get_application_score(body):
         if dynamic_max_resume_score > 5:
             resume_score_cap = 5
         else:
-            if is_resume_included:
-                resume_score_cap = dynamic_max_resume_score
-            else:
-                resume_score_cap = 0
+            resume_score_cap = dynamic_max_resume_score
             
         work_ex_score_cap = 3
 
@@ -113,7 +104,7 @@ def get_application_score(body):
 
         overall_fit_score = weighted_sentiment_score + weighted_profile_score + weighted_resume_score + weighted_work_ex_score
 
-        max_score = 1*weight_sentiment + profile_score_cap*weight_profile + resume_score_cap*weight_resume + 3*weight_work_ex # Maximum possible weighted score
+        max_score = 1*0.1 + profile_score_cap*0.35 + resume_score_cap*0.4 + 3*0.15 # Maximum possible weighted score
         min_score = -0.1  # Minimum possible weighted score
 
         overall_fit_score_normalized = (overall_fit_score - min_score) / (max_score - min_score)
@@ -156,9 +147,8 @@ def get_similarity_score(emb1, emb2):
     # Calculate cosine similarity
     return cosine_similarity(emb1, emb2)[0][0]
 
-def get_emb_score(embeddings, opening_description_topic_embeddings, organization_values_topic_embeddings):
+def get_emb_score(embeddings, opening_description_topic_embeddings, organization_values_topic_embeddings, treshold):
     score = 0
-    treshold = 0.4
 
     for i in embeddings:
         for j in np.concatenate((opening_description_topic_embeddings, organization_values_topic_embeddings)):
@@ -167,3 +157,6 @@ def get_emb_score(embeddings, opening_description_topic_embeddings, organization
                 score+=similarity_score
 
     return score
+
+def get_final_emb_score(emb_score1, emb_score2):
+    return emb_score1*0.9+emb_score2*0.1
