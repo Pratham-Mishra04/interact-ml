@@ -6,7 +6,7 @@ import controllers.projects as project_controllers
 import controllers.posts as post_controllers
 import controllers.openings as opening_controllers
 import controllers.applications as application_controllers
-import controllers.image as img_controllers
+import controllers.miscellaneous as miscellaneous_controllers
 import os 
 from typing import List
 
@@ -30,6 +30,9 @@ class ReqBody(BaseModel):
     id:str
     limit: int = 4
     page: int = 1 
+
+class ContentBody(BaseModel):
+    content:str
 
 class ApplicationScoreBody(BaseModel):
     cover_letter: str
@@ -71,7 +74,11 @@ async def recommend_posts(body:ReqBody):
 
 @app.post("/image_blur_hash")
 async def get_blur_hash(image: UploadFile = File(...)):
-    return img_controllers.generate_blurhash_data_url(image)
+    return miscellaneous_controllers.generate_blurhash_data_url(image)
+
+@app.post('/toxicity')
+async def check_toxicity(body:ContentBody):
+    return miscellaneous_controllers.check_toxicity(body)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT"))

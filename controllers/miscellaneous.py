@@ -1,6 +1,11 @@
 from PIL import Image
 from io import BytesIO
 import base64
+from transformers import AutoModelForSequenceClassification
+from transformers import TFAutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoConfig
+import numpy as np
+from scipy.special import softmax
 
 def generate_blurhash_data_url(image_file):
     try:
@@ -36,4 +41,27 @@ def generate_blurhash_data_url(image_file):
         return {
             'status': 'error',
             'message': f"Error generating BlurHash data URL: {str(e)}",
+        }
+    
+def check_toxicity(body):
+    MODEL = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
+    tokenizer = AutoTokenizer.from_pretrained(MODEL)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+
+    text = body.content
+
+    encoded_input = tokenizer(text, return_tensors='pt')
+    output = model(**encoded_input)
+    scores = output[0][0].detach().numpy()
+    scores = softmax(scores)
+
+    [negative_score, neutral_score, positive_score] = scores
+
+    if negative_score>0.6:
+        return {
+            'flag': True
+        }
+    else:
+        return {
+            'flag': False
         }
