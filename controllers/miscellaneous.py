@@ -43,10 +43,9 @@ def generate_blurhash_data_url(image_file):
             'message': f"Error generating BlurHash data URL: {str(e)}",
         }
     
-def check_toxicity(body):
-    MODEL = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
-    tokenizer = AutoTokenizer.from_pretrained(MODEL)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
+def check_toxicity(body, request):
+    tokenizer = request.app.state.roberta_sentiment_tokenizer
+    model = request.app.state.roberta_sentiment_model
 
     text = body.content
 

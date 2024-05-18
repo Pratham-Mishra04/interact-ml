@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -9,8 +9,8 @@ import controllers.applications as application_controllers
 import controllers.miscellaneous as miscellaneous_controllers
 import os 
 from typing import List
-
 from dotenv import load_dotenv
+from transformers import AutoTokenizer, AutoModel, AutoModelForSequenceClassification
 
 load_dotenv()
 
@@ -43,6 +43,23 @@ class ApplicationScoreBody(BaseModel):
     organization_values_topics: List[str]
     years_of_experience: int
 
+miniLM_tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+miniLM_model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+
+bert_tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+bert_model = AutoModel.from_pretrained('bert-base-uncased')
+
+roberta_sentiment_tokenizer = AutoTokenizer.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
+roberta_sentiment_model = AutoModelForSequenceClassification.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
+
+app.state.miniLM_tokenizer = miniLM_tokenizer
+app.state.miniLM_model = miniLM_model
+
+app.state.bert_tokenizer = bert_tokenizer
+app.state.bert_model = bert_model
+
+app.state.roberta_sentiment_tokenizer = roberta_sentiment_tokenizer
+app.state.roberta_sentiment_model = roberta_sentiment_model
 
 @app.get("/ping/{input_text}")
 def ping(input_text: str):
@@ -57,12 +74,12 @@ async def similar_openings(body:ReqBody):
     return opening_controllers.similar(body)
 
 @app.post('/openings/application_score')
-async def application_score(body:ApplicationScoreBody):
-    return opening_controllers.get_application_score(body)
+async def application_score(body:ApplicationScoreBody, request: Request):
+    return opening_controllers.get_application_score(body, request)
 
 @app.post('/openings/application_score2')
-async def application_score_test(body:ApplicationScoreBody):
-    return application_controllers.get_application_score(body)
+async def application_score_test(body:ApplicationScoreBody, request: Request):
+    return application_controllers.get_application_score(body, request)
 
 @app.post('/projects/recommend')
 async def recommend_projects(body:ReqBody):
@@ -77,8 +94,8 @@ async def get_blur_hash(image: UploadFile = File(...)):
     return miscellaneous_controllers.generate_blurhash_data_url(image)
 
 @app.post('/toxicity')
-async def check_toxicity(body:ContentBody):
-    return miscellaneous_controllers.check_toxicity(body)
+async def check_toxicity(body:ContentBody, request: Request):
+    return miscellaneous_controllers.check_toxicity(body, request)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT"))

@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics.pairwise import cosine_similarity
 
-def get_application_score(body):
+def get_application_score(body, request):
     try:
         cover_letter = body.cover_letter
         profile_topics = body.profile_topics
@@ -15,11 +15,11 @@ def get_application_score(body):
         organization_values_topics = body.organization_values_topics
         years_of_experience = body.years_of_experience
 
-        miniLM_tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-        miniLM_model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        miniLM_tokenizer = request.app.state.miniLM_tokenizer
+        miniLM_model = request.app.state.miniLM_model
 
-        bert_tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-        bert_model = AutoModel.from_pretrained('bert-base-uncased')
+        bert_tokenizer = request.app.state.bert_tokenizer
+        bert_model = request.app.state.bert_model
 
         if len(resume_topics)==0:
             is_resume_included = False

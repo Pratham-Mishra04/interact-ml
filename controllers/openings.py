@@ -25,7 +25,7 @@ def similar(body):
             'recommendations': []
         }
 
-def get_application_score(body):
+def get_application_score(body, request):
     try:
         cover_letter = body.cover_letter
         profile_topics = body.profile_topics
@@ -35,8 +35,8 @@ def get_application_score(body):
         organization_values_topics = body.organization_values_topics
         years_of_experience = body.years_of_experience
 
-        tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-        model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        tokenizer = request.app.state.miniLM_tokenizer
+        model = request.app.state.miniLM_model
 
         if len(resume_topics)==0:
             is_resume_included = False
