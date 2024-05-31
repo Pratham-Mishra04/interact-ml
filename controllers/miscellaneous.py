@@ -1,10 +1,6 @@
 from PIL import Image
 from io import BytesIO
 import base64
-from transformers import AutoModelForSequenceClassification
-from transformers import TFAutoModelForSequenceClassification
-from transformers import AutoTokenizer, AutoConfig
-import numpy as np
 from scipy.special import softmax
 
 def generate_blurhash_data_url(image_file):

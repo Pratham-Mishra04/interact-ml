@@ -1,6 +1,5 @@
 import numpy as np
 from textblob import TextBlob
-from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 from sklearn.metrics.pairwise import cosine_similarity
