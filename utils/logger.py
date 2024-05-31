@@ -18,7 +18,7 @@ def create_logger(name, filename, level, format_str):
     logger.setLevel(level)
     formatter = logging.Formatter(format_str)
 
-    file_handler = logging.FileHandler(filename, mode='w')
+    file_handler = logging.FileHandler(filename, mode='a')
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
 

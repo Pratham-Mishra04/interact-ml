@@ -11,3 +11,11 @@ services:
     volumes:
       - ./models:/app/models
       - ./logs:/app/logs
+    networks:
+      - default
+      - interact_go_backend-network
+
+networks:
+  interact_go_backend-network:
+    external: true
+
