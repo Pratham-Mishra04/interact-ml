@@ -50,15 +50,20 @@ try :
     custom_stopwords = ["need", "want", "this", "that", "fast"]
 
     def stem(x):
+        if not isinstance(x, list):
+            return []
+        
         L = []
-        tagged_tokens = pos_tag(x)
-        for token, pos in tagged_tokens:
-            token=token.lower()
-            if pos != 'JJ' and pos != 'JJR' and pos != 'JJS' and token not in custom_stopwords:  # Remove adjectives
-                stemmed_token = ps.stem(token)
-                if stemmed_token not in L and stemmed_token not in stopwords.words("english") and stemmed_token not in string.punctuation:
-                    L.append(stemmed_token)
-        return " ".join(L)
+        for token in x:
+            if isinstance(token, str):
+                tagged_token = pos_tag([token])
+                token = token.lower()
+                pos = tagged_token[0][1]
+                if pos not in {'JJ', 'JJR', 'JJS'} and token not in custom_stopwords:  # Remove adjectives
+                    stemmed_token = ps.stem(token)
+                    if stemmed_token not in L and stemmed_token not in stopwords.words("english") and stemmed_token not in string.punctuation:
+                        L.append(stemmed_token)
+        return ' '.join(L)
 
     df.loc[:,'keys']=df['keys'].apply(stem)
     df=df[['id','title','keys']]

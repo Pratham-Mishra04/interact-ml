@@ -60,16 +60,18 @@ def log_to_admin_logger(record):
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + jwt_token,
-            'API-TOKEN': LOGGER_TOKEN
+            'api-token': LOGGER_TOKEN
         }
 
         response = requests.post(LOGGER_URL, headers=headers, data=json_data)
 
         if response.status_code != 200:
-            error_logger.error(f"Title: Error Posting to Admin Logger, Description: {response.text}, Path: utils/api_logger.py")
+            pass
+            # error_logger.error(f"Title: Error Posting to Admin Logger, Description: {response.text}, Path: utils/api_logger.py")
 
     except Exception as e:
-        error_logger.error(f"Title: Error Posting to Admin Logger, Description: {str(e)}, Path: utils/api_logger.py")
+        pass
+        # error_logger.error(f"Title: Error Posting to Admin Logger, Description: {str(e)}, Path: utils/api_logger.py")
 
 if __name__ =="__main__":
     record = {
