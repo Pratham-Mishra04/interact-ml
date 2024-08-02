@@ -3,6 +3,7 @@ import numpy as np
 from keras.models import load_model
 from tensorflow import newaxis
 import json
+import torch
 
 #* Post Recommendations
 model = load_model('models/posts/recommendations.h5')
@@ -55,3 +56,24 @@ def recommend(body):
     return {
         'recommendations':final_rec['post_id'].values.tolist()
     }
+
+def preprocess(text):
+    return text.lower()
+
+def get_topics(body, request):
+    tokenizer = request.app.state.topics_bert_tokenizer
+    model = request.app.state.topics_bert_model
+    mlb = request.app.state.topics_mlb
+
+    post = preprocess(body.content)
+    encoding = tokenizer(post, return_tensors="pt", truncation=True, padding=True, max_length=128)
+    
+    with torch.no_grad():
+        outputs = model(**encoding)
+    logits = outputs.logits
+    
+    # Apply sigmoid activation to get probabilities
+    probs = torch.sigmoid(logits).squeeze().cpu().numpy()
+    
+    predicted_labels = [mlb.classes_[i] for i in range(len(probs)) if probs[i] >= 0.4]
+    return predicted_labels

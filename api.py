@@ -11,6 +11,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModel, AutoModelForSequenceClassification
+import pickle
 
 load_dotenv()
 
@@ -52,6 +53,14 @@ bert_model = AutoModel.from_pretrained('bert-base-uncased')
 roberta_sentiment_tokenizer = AutoTokenizer.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
 roberta_sentiment_model = AutoModelForSequenceClassification.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
 
+# topic_model_dir = "../../models/posts/topics"
+
+# topics_bert_tokenizer = AutoTokenizer.from_pretrained(topic_model_dir)
+# topics_bert_model = AutoModel.from_pretrained(topic_model_dir)
+
+# with open(f'{topic_model_dir}/mlb.pickle', 'rb') as f:
+#         topics_mlb=pickle.load(f)
+
 app.state.miniLM_tokenizer = miniLM_tokenizer
 app.state.miniLM_model = miniLM_model
 
@@ -60,6 +69,10 @@ app.state.bert_model = bert_model
 
 app.state.roberta_sentiment_tokenizer = roberta_sentiment_tokenizer
 app.state.roberta_sentiment_model = roberta_sentiment_model
+
+# app.state.topics_bert_tokenizer = topics_bert_tokenizer
+# app.state.topics_bert_model = topics_bert_model
+# app.state.topics_mlb = topics_mlb
 
 @app.get("/ping/{input_text}")
 def ping(input_text: str):
@@ -88,6 +101,10 @@ async def recommend_projects(body:ReqBody):
 @app.post('/posts/recommend')
 async def recommend_posts(body:ReqBody):
     return post_controllers.recommend(body)
+
+# @app.post('/posts/topics')
+# async def recommend_posts(body:ContentBody, request: Request):
+#     return post_controllers.get_topics(body, request)
 
 @app.post("/image_blur_hash")
 async def get_blur_hash(image: UploadFile = File(...)):

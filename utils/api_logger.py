@@ -9,6 +9,7 @@ import sys
 LOGGER_URL = os.getenv("LOGGER_URL")
 LOGGER_SECRET = os.getenv("LOGGER_SECRET")
 LOGGER_TOKEN = os.getenv("LOGGER_TOKEN")
+ML_URL = os.getenv("ML_URL")
 
 def create_logger(name, filename, level, format):
     logger = logging.Logger(name, level)
@@ -60,7 +61,8 @@ def log_to_admin_logger(record):
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + jwt_token,
-            'api-token': LOGGER_TOKEN
+            'api-token': LOGGER_TOKEN,
+            'Origin': ML_URL,
         }
 
         response = requests.post(LOGGER_URL, headers=headers, data=json_data)

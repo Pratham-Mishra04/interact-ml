@@ -5,7 +5,8 @@ services:
     container_name: interact-ml
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: DockerFile
+    restart: always
     ports:
       - "3030:3030"
     volumes:
