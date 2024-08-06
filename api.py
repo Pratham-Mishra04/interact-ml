@@ -50,9 +50,7 @@ miniLM_model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2
 bert_tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 bert_model = AutoModel.from_pretrained('bert-base-uncased')
 
-roberta_sentiment_tokenizer = AutoTokenizer.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
-roberta_sentiment_model = AutoModelForSequenceClassification.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
-
+roberta_sentiment_pipeline = pipeline("sentiment-analysis", model='cardiffnlp/twitter-roberta-base-sentiment-latest', tokenizer='cardiffnlp/twitter-roberta-base-sentiment-latest')
 falconai_image_pipeline = pipeline("image-classification", model="Falconsai/nsfw_image_detection")
 
 # topic_model_dir = "../../models/posts/topics"
@@ -69,8 +67,7 @@ app.state.miniLM_model = miniLM_model
 app.state.bert_tokenizer = bert_tokenizer
 app.state.bert_model = bert_model
 
-app.state.roberta_sentiment_tokenizer = roberta_sentiment_tokenizer
-app.state.roberta_sentiment_model = roberta_sentiment_model
+app.state.roberta_sentiment_pipeline = roberta_sentiment_pipeline
 app.state.falconai_image_pipeline = falconai_image_pipeline
 
 # app.state.topics_bert_tokenizer = topics_bert_tokenizer

@@ -40,24 +40,28 @@ def generate_blurhash_data_url(image_file):
         }
     
 def check_toxicity(body, request):
-    tokenizer = request.app.state.roberta_sentiment_tokenizer
-    model = request.app.state.roberta_sentiment_model
+    try:
+        pipeline = request.app.state.roberta_sentiment_pipeline
 
-    text = body.content
+        text = body.content
 
-    encoded_input = tokenizer(text, return_tensors='pt')
-    output = model(**encoded_input)
-    scores = output[0][0].detach().numpy()
-    scores = softmax(scores)
+        output = pipeline(text)
 
-    [negative_score, neutral_score, positive_score] = scores
+        label  = output[0]['label']
+        score = output[0]['score']
 
-    if negative_score > 0.75:
+        if label == "negative" and score > 0.6:
+            return {
+                'flag': True
+            }
+        else:
+            return {
+                'flag': False
+            }
+    except Exception as e:
         return {
-            'flag': True
-        }
-    else:
-        return {
+            'status': 'error',
+            'message': f"Error checking text toxicity: {str(e)}",
             'flag': False
         }
     
