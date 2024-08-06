@@ -52,11 +52,41 @@ def check_toxicity(body, request):
 
     [negative_score, neutral_score, positive_score] = scores
 
-    if negative_score>0.6:
+    if negative_score > 0.75:
         return {
             'flag': True
         }
     else:
         return {
+            'flag': False
+        }
+    
+def check_image_profanity(image_file, request):
+    try:
+        pipeline = request.app.state.falconai_image_pipeline
+
+        image_content = image_file.file.read()
+        image_content_io = BytesIO(image_content)
+
+        img = Image.open(image_content_io)
+
+        outputs = pipeline(img)
+        score_dict = {item['label']: item['score'] for item in outputs}
+
+        nsfw_score = score_dict.get('nsfw', None)
+
+        if nsfw_score > 0.5:
+            return {
+                'flag': True
+            }
+        else:
+            return {
+                'flag': False
+            }
+        
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f"Error checking image profanity: {str(e)}",
             'flag': False
         }

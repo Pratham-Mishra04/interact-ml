@@ -11,7 +11,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModel, AutoModelForSequenceClassification
-import pickle
+from transformers import pipeline
 
 load_dotenv()
 
@@ -53,6 +53,8 @@ bert_model = AutoModel.from_pretrained('bert-base-uncased')
 roberta_sentiment_tokenizer = AutoTokenizer.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
 roberta_sentiment_model = AutoModelForSequenceClassification.from_pretrained('cardiffnlp/twitter-roberta-base-sentiment-latest')
 
+falconai_image_pipeline = pipeline("image-classification", model="Falconsai/nsfw_image_detection")
+
 # topic_model_dir = "../../models/posts/topics"
 
 # topics_bert_tokenizer = AutoTokenizer.from_pretrained(topic_model_dir)
@@ -69,6 +71,7 @@ app.state.bert_model = bert_model
 
 app.state.roberta_sentiment_tokenizer = roberta_sentiment_tokenizer
 app.state.roberta_sentiment_model = roberta_sentiment_model
+app.state.falconai_image_pipeline = falconai_image_pipeline
 
 # app.state.topics_bert_tokenizer = topics_bert_tokenizer
 # app.state.topics_bert_model = topics_bert_model
@@ -113,6 +116,10 @@ async def get_blur_hash(image: UploadFile = File(...)):
 @app.post('/toxicity')
 async def check_toxicity(body:ContentBody, request: Request):
     return miscellaneous_controllers.check_toxicity(body, request)
+
+@app.post('/image_profanity')
+async def check_toxicity(image: UploadFile, request: Request):
+    return miscellaneous_controllers.check_image_profanity(image, request)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT"))
