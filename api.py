@@ -154,8 +154,8 @@ async def check_toxicity(image: UploadFile, request: Request):
 
 
 @app.post("/code_review")
-async def code_review(body: CodeReviewBody):
-    return code_review_controllers.review_code(body)
+async def code_review(body: CodeReviewBody, request: Request):
+    return code_review_controllers.review_code(body, request)
 
 
 if __name__ == "__main__":

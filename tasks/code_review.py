@@ -8,6 +8,8 @@ from .config import app
 import os
 from dotenv import load_dotenv
 import subprocess
+import jwt
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -53,9 +55,15 @@ def process_code_review_async(repos, cloneRepoPath, callback_url):
         # Clean up cloned repos
         repo_manager.complete_cleanup()
 
+        results = []
+        for i in range(len(successful_repos)):
+            try:
+                results.append({"repoLink": successful_repos[i], "scores": scores[i]})
+            except:
+                continue
+
         # Send the result to the callback URL
-        result = {"repo_links": successful_repos, "scores": scores}
-        send_callback(callback_url, result)
+        send_callback(callback_url, {"results": results})
 
     except Exception as e:
         # Retry logic if something fails, handled by Celery's autoretry mechanism
@@ -65,20 +73,34 @@ def process_code_review_async(repos, cloneRepoPath, callback_url):
 
 def send_callback(callback_url, result):
     try:
-        api_token = os.getenv("ML_API_TOKEN")
+        BACKEND_SECRET = os.getenv("BACKEND_SECRET")
+        BACKEND_TOKEN = os.getenv("BACKEND_TOKEN")
+        ML_URL = os.getenv("ML_URL")
 
-        if not api_token:
+        if not BACKEND_SECRET or not BACKEND_TOKEN:
             logger(
                 "error",
-                "Missing ML-API-TOKEN",
-                "ML-API-TOKEN environment variable is not set. Cannot send callback without the token.",
+                "Missing BACKEND_SECRET or BACKEND_TOKEN",
+                "BACKEND_SECRET/BACKEND_TOKEN environment variable is not set. Cannot send callback without the token.",
                 "code-review-callback",
             )
             return
 
+        jwt_token = jwt.encode(
+            {
+                "sub": "ml",
+                "crt": datetime.now().timestamp(),
+                "exp": (datetime.now() + timedelta(seconds=15.0)).timestamp(),
+            },
+            BACKEND_SECRET,
+            algorithm="HS256",
+        )
+
         headers = {
-            "Authorization": f"Bearer {api_token}",
+            "Authorization": f"Bearer {jwt_token}",
             "Content-Type": "application/json",
+            "api-token": BACKEND_TOKEN,
+            "Origin": ML_URL,
         }
 
         response = requests.post(callback_url, json=result, headers=headers)
