@@ -11,6 +11,9 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
+COPY celery.requirements.txt /app/
+RUN pip install -r celery.requirements.txt
+
 # Copy the code_review requirements file and install its dependencies
 COPY code_review/requirements.txt /app/code_review/requirements.txt
 RUN pip install -r /app/code_review/requirements.txt

@@ -8,15 +8,18 @@ RUN useradd -ms /bin/bash celeryuser
 WORKDIR /app
 
 # Copy the main requirements file and install dependencies
-COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+COPY celery.requirements.txt /app/
+RUN pip install -r celery.requirements.txt
 
 # Copy the code_review requirements file and install its dependencies
 COPY code_review/requirements.txt /app/code_review/requirements.txt
 RUN pip install -r /app/code_review/requirements.txt
 
-# Now copy the rest of the application code
-COPY . /app/
+# Copy only the necessary source files
+COPY code_review /app/code_review
+COPY tasks /app/tasks
+COPY utils /app/utils
+COPY .env /app/.env
 
 # Change ownership of the /app directory to the non-root user
 RUN chown -R celeryuser:celeryuser /app
