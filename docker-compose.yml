@@ -16,6 +16,18 @@ services:
       - default
       - interact_go_backend-network
 
+  celery-worker:
+    container_name: celery_worker
+    build:
+      context: .
+      dockerfile: celery.DockerFile
+    command: celery -A tasks.config.app worker --loglevel=info
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    networks:
+      - interact_go_backend-network
+
 networks:
   interact_go_backend-network:
     external: true
