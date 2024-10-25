@@ -7,23 +7,16 @@ RUN apt-get update && apt-get -y install cron
 # Set the working directory to /app
 WORKDIR /app
 
-# Copy the requirements file into the container at /app
+# Copy the main requirements file and install dependencies
 COPY requirements.txt /app/
-
-# Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
 
-# Copy the current directory contents, including submodules, into the container at /app
+# Copy the code_review requirements file and install its dependencies
+COPY code_review/requirements.txt /app/code_review/requirements.txt
+RUN pip install -r /app/code_review/requirements.txt
+
+# Now copy the rest of the application code
 COPY . /app
-
-# Navigate to the submodule directory and install additional requirements
-WORKDIR /app/code_review
-
-# Install the submodule's requirements
-RUN pip install -r requirements.txt
-
-# Return to the main working directory
-WORKDIR /app
 
 # Make port 3030 available to the world outside this container
 EXPOSE 3030
@@ -32,7 +25,7 @@ EXPOSE 3030
 RUN chmod +x /app/trainer.py
 
 # Run the trainer.py script
-RUN /usr/bin/python3 /app/trainer.py
+# RUN /usr/bin/python3 /app/trainer.py
 
 # Apply the cron job
 RUN chmod +x /app/cron

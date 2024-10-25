@@ -47,6 +47,7 @@ class ContentBody(BaseModel):
 
 class CodeReviewBody(BaseModel):
     repo_links: List[str]
+    callback_url: str
 
 
 class ApplicationScoreBody(BaseModel):
@@ -59,22 +60,22 @@ class ApplicationScoreBody(BaseModel):
     years_of_experience: int
 
 
-miniLM_tokenizer = AutoTokenizer.from_pretrained(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
-miniLM_model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+# miniLM_tokenizer = AutoTokenizer.from_pretrained(
+#     "sentence-transformers/all-MiniLM-L6-v2"
+# )
+# miniLM_model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 
-bert_tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-bert_model = AutoModel.from_pretrained("bert-base-uncased")
+# bert_tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+# bert_model = AutoModel.from_pretrained("bert-base-uncased")
 
-roberta_sentiment_pipeline = pipeline(
-    "sentiment-analysis",
-    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-    tokenizer="cardiffnlp/twitter-roberta-base-sentiment-latest",
-)
-falconai_image_pipeline = pipeline(
-    "image-classification", model="Falconsai/nsfw_image_detection"
-)
+# roberta_sentiment_pipeline = pipeline(
+#     "sentiment-analysis",
+#     model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+#     tokenizer="cardiffnlp/twitter-roberta-base-sentiment-latest",
+# )
+# falconai_image_pipeline = pipeline(
+#     "image-classification", model="Falconsai/nsfw_image_detection"
+# )
 
 topic_model_dir = "../../models/posts/topics"
 
@@ -84,14 +85,14 @@ topics_bert_model = AutoModel.from_pretrained(topic_model_dir)
 with open(f'{topic_model_dir}/mlb.pickle', 'rb') as f:
         topics_mlb=pickle.load(f)
 
-app.state.miniLM_tokenizer = miniLM_tokenizer
-app.state.miniLM_model = miniLM_model
+# app.state.miniLM_tokenizer = miniLM_tokenizer
+# app.state.miniLM_model = miniLM_model
 
-app.state.bert_tokenizer = bert_tokenizer
-app.state.bert_model = bert_model
+# app.state.bert_tokenizer = bert_tokenizer
+# app.state.bert_model = bert_model
 
-app.state.roberta_sentiment_pipeline = roberta_sentiment_pipeline
-app.state.falconai_image_pipeline = falconai_image_pipeline
+# app.state.roberta_sentiment_pipeline = roberta_sentiment_pipeline
+# app.state.falconai_image_pipeline = falconai_image_pipeline
 
 app.state.topics_bert_tokenizer = topics_bert_tokenizer
 app.state.topics_bert_model = topics_bert_model
