@@ -1,15 +1,15 @@
+import subprocess
 from parsel import Selector
 import requests
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-import logging
 from functools import lru_cache
 import json
 from datetime import datetime
 from urllib.parse import urljoin
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def logger(level , title, description, path):
+    subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
 @dataclass
 class PlaceholderConfig:
@@ -55,7 +55,7 @@ class WebPageFetcher:
             response.raise_for_status()
             return response
         except requests.RequestException as e:
-            logger.error(f"Error fetching {url}: {str(e)}")
+            logger("error",f"Error fetching {url}: {str(e)}", "", "scraper.py")
             raise
 
 class ParselScraper:
@@ -81,7 +81,7 @@ class ParselScraper:
             return result.strip() if result else None
             
         except Exception as e:
-            logger.error(f"Error extracting with {placeholder_config.selector_type}: {str(e)}")
+            logger("error",f"Error extracting content using selector: {str(e)}", "", "scraper.py")
             return None
 
     def _process_value(self, key: str, value: str, base_url: str) -> str:
@@ -97,7 +97,7 @@ class ParselScraper:
             if script:
                 return json.loads(script)
         except Exception as e:
-            logger.warning(f"Failed to extract structured data: {str(e)}")
+            logger("error",f"Error extracting structured data: {str(e)}", "", "scraper.py")
         return {}
 
     def scrape(self, config: ScraperConfig) -> Dict[str, Any]:
@@ -129,13 +129,13 @@ class ParselScraper:
                         result[placeholder] = self._process_value(placeholder, value, config.url)
                     
                 except Exception as e:
-                    logger.error(f"Error extracting {placeholder}: {str(e)}")
+                    logger("error",f"Error processing placeholder {placeholder}: {str(e)}", "", "scraper.py")
                     result[placeholder] = None
             
             return result
             
         except Exception as e:
-            logger.error(f"Scraping failed: {str(e)}")
+            logger("error",f"Error scraping {config.url}: {str(e)}", "", "scraper.py")
             return {
                 'success': False,
                 'error': str(e),
