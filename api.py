@@ -11,7 +11,6 @@ import controllers.code_reviewer as code_review_controllers
 import os
 from typing import Any, Dict, List
 from dotenv import load_dotenv
-from scripts.scraper import PlaceholderConfig
 from transformers import AutoTokenizer, AutoModel
 from transformers import pipeline
 
@@ -58,6 +57,10 @@ class ApplicationScoreBody(BaseModel):
     opening_description_topics: List[str]
     organization_values_topics: List[str]
     years_of_experience: int
+
+class PostConfigBody(BaseModel):
+    template: str
+    config: Dict[str, Any]
 
 
 # miniLM_tokenizer = AutoTokenizer.from_pretrained(
@@ -159,7 +162,7 @@ async def code_review(body: CodeReviewBody):
     return code_review_controllers.review_code(body)
 
 @app.post("/generate_post")
-async def generate_post(post_config: Dict[str, Any]):
+async def generate_post(post_config: PostConfigBody):
     return miscellaneous_controllers.generate_post(post_config)
 
 
