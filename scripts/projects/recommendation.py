@@ -2,15 +2,59 @@ import pandas as pd
 import numpy as np
 import json
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from sklearn.preprocessing import LabelEncoder
+import tensorflow as tf
+from keras.models import Model
+from keras.layers import Input,Dense,Embedding,Flatten,Input,concatenate
+from keras.regularizers import l2
 
 def logger(level , title, description, path):
     subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
+def extract_user_embeddings(model, user_le, df):
+    user_embeddings = {}
+
+    for enc_user_id in df['enc_user_id'].unique():
+        user_embedding = model.get_layer('user_emb')(np.array([enc_user_id]))
+        user_embedding = tf.keras.backend.flatten(user_embedding)
+        user_embedding = tf.expand_dims(user_embedding, axis=0)
+        user_dense = model.get_layer('user_dense')(user_embedding)
+        
+        user_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_dense.numpy().tolist()
+
+def extract_project_embeddings(model, project_le, df):
+    project_embeddings = {}
+
+    for enc_project_id in df['enc_project_id'].unique():
+        project_embedding = model.get_layer('project_emb')(np.array([enc_project_id]))
+        project_embedding = tf.keras.backend.flatten(project_embedding)
+        project_embedding = tf.expand_dims(project_embedding, axis=0)
+        project_dense = model.get_layer('project_dense')(project_embedding)
+        
+        project_embeddings[project_le.inverse_transform([enc_project_id])[0]] = project_dense.numpy().tolist()
+
+def extract_user_bias_embeddings(model, user_le, df):
+    user_bias_embeddings = {}
+
+    for enc_user_id in df['enc_user_id'].unique():
+        user_bias_embedding = model.get_layer('user_bias_emb')(np.array([enc_user_id]))
+        user_bias_embedding = tf.keras.backend.flatten(user_bias_embedding)
+
+        user_bias_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_bias_embedding.numpy().tolist()
+
+def extract_project_bias_embeddings(model, project_le, df):
+    project_bias_embeddings = {}
+
+    for enc_project_id in df['enc_project_id'].unique():
+        project_bias_embedding = model.get_layer('project_bias_emb')(np.array([enc_project_id]))
+        project_bias_embedding = tf.keras.backend.flatten(project_bias_embedding)
+        
+        project_bias_embeddings[project_le.inverse_transform([enc_project_id])[0]] = project_bias_embedding.numpy().tolist()
+
 try:
     #* Model Building
     df = pd.read_csv('data/project_scores.csv')
-
-    from sklearn.preprocessing import LabelEncoder
 
     user_le = LabelEncoder()
     df['enc_user_id'] = user_le.fit_transform(df['user_id'])
@@ -20,11 +64,6 @@ try:
 
     X = df[['enc_user_id', 'enc_project_id']]
     y = df['score']
-
-    import tensorflow as tf
-    from keras.models import Model
-    from keras.layers import Input,Dense,Embedding,Flatten,Input,concatenate
-    from keras.regularizers import l2
 
     num_users = df['enc_user_id'].nunique()
     num_projects = df['enc_project_id'].nunique()
@@ -68,42 +107,17 @@ try:
 
     tf.keras.models.save_model(model, 'models/projects/recommendations.h5')
 
-    #* Saving Embeddings
-    user_embeddings = {}
+    # Saving Embeddings
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_user_emb = executor.submit(extract_user_embeddings, model, user_le, df)
+        future_post_emb = executor.submit(extract_project_embeddings, model, project_le, df)
+        future_user_bias = executor.submit(extract_user_bias_embeddings, model, user_le, df)
+        future_post_bias = executor.submit(extract_project_bias_embeddings, model, project_le, df)
 
-    for enc_user_id in df['enc_user_id'].unique():
-        user_embedding = model.get_layer('user_emb')(np.array([enc_user_id]))
-        user_embedding = tf.keras.backend.flatten(user_embedding)
-        user_embedding = tf.expand_dims(user_embedding, axis=0)
-        user_dense = model.get_layer('user_dense')(user_embedding)
-        
-        user_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_dense.numpy().tolist()
-
-    project_embeddings = {}
-
-    for enc_project_id in df['enc_project_id'].unique():
-        project_embedding = model.get_layer('project_emb')(np.array([enc_project_id]))
-        project_embedding = tf.keras.backend.flatten(project_embedding)
-        project_embedding = tf.expand_dims(project_embedding, axis=0)
-        project_dense = model.get_layer('project_dense')(project_embedding)
-        
-        project_embeddings[project_le.inverse_transform([enc_project_id])[0]] = project_dense.numpy().tolist()
-
-    user_bias_embeddings = {}
-
-    for enc_user_id in df['enc_user_id'].unique():
-        user_bias_embedding = model.get_layer('user_bias_emb')(np.array([enc_user_id]))
-        user_bias_embedding = tf.keras.backend.flatten(user_bias_embedding)
-
-        user_bias_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_bias_embedding.numpy().tolist()
-
-    project_bias_embeddings = {}
-
-    for enc_project_id in df['enc_project_id'].unique():
-        project_bias_embedding = model.get_layer('project_bias_emb')(np.array([enc_project_id]))
-        project_bias_embedding = tf.keras.backend.flatten(project_bias_embedding)
-        
-        project_bias_embeddings[project_le.inverse_transform([enc_project_id])[0]] = project_bias_embedding.numpy().tolist()
+        user_embeddings = future_user_emb.result()
+        project_embeddings = future_post_emb.result()
+        user_bias_embeddings = future_user_bias.result()
+        project_bias_embeddings = future_post_bias.result()
 
     with open('models/projects/user_embeddings.json', 'w') as f:
         json.dump(user_embeddings, f)

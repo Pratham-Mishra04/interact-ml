@@ -1,6 +1,10 @@
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
+import torch
+import pickle
 
 df = pd.read_json('../../data/post_topics.json')
 
@@ -14,16 +18,17 @@ y = mlb.fit_transform(df['categories'])
 
 X_train, X_val, y_train, y_val = train_test_split(df['post'], y, test_size=0.2, random_state=42)
 
-from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
-import torch
-
 # Load pre-trained BERT tokenizer and model
 model_name = "bert-base-uncased"
 tokenizer = BertTokenizer.from_pretrained(model_name)
 model = BertForSequenceClassification.from_pretrained(model_name, num_labels=len(mlb.classes_))
 
-train_encodings = tokenizer(list(X_train), truncation=True, padding=True, max_length=128)
-val_encodings = tokenizer(list(X_val), truncation=True, padding=True, max_length=128)
+with ThreadPoolExecutor(max_workers=4) as executor:
+    future_train_encodings = executor.submit(lambda: tokenizer(list(X_train), truncation=True, padding=True, max_length=128))
+    future_val_encodings = executor.submit(lambda: tokenizer(list(X_val), truncation=True, padding=True, max_length=128))
+
+    train_encodings = future_train_encodings.result()
+    val_encodings = future_val_encodings.result()
 
 class MultiLabelDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -37,7 +42,7 @@ class MultiLabelDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.labels)
-    
+
 train_dataset = MultiLabelDataset(train_encodings, y_train)
 val_dataset = MultiLabelDataset(val_encodings, y_val)
 
@@ -67,8 +72,6 @@ output_dir = "../../models/posts/topics"
 
 model.save_pretrained(output_dir)
 tokenizer.save_pretrained(output_dir)
-
-import pickle
 
 with open(f'{output_dir}/mlb.pickle', 'wb') as f:
     pickle.dump(mlb, f)
