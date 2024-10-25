@@ -1,7 +1,10 @@
+from typing import Any, Dict
 from PIL import Image
 from io import BytesIO
 import base64
 from scipy.special import softmax
+
+from scripts.scraper import ParselScraper, ScraperConfig
 
 def generate_blurhash_data_url(image_file):
     try:
@@ -93,4 +96,24 @@ def check_image_profanity(image_file, request):
             'status': 'error',
             'message': f"Error checking image profanity: {str(e)}",
             'flag': False
+        }
+    
+def generate_post(post_config: Dict[str, Any]):
+    """Entry point function"""
+    try:
+        config = ScraperConfig.from_dict(post_config)
+        scraper = ParselScraper()
+        result = scraper.scrape(config)
+        
+        return {
+            'status': 'success',
+            'message': '',
+            'data': result
+        }
+        
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f"Error generating post: {str(e)}",
+            'data': {}
         }
