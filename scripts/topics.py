@@ -1,6 +1,16 @@
 from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import copy
+from psycopg2 import sql
+import json
+import subprocess
+import psycopg2
+import os
+from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 #Mean Pooling - Take attention mask into account for correct averaging
 def mean_pooling(model_output, attention_mask):
@@ -27,8 +37,6 @@ def get_embeddings(sentences, model, tokenizer):
     sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
 
     return sentence_embeddings
-
-from sklearn.metrics.pairwise import cosine_similarity
 
 def get_similarity_score(emb1, emb2):
     emb1 = emb1.reshape(1, -1)
@@ -75,6 +83,7 @@ def preprocess_weights(config):
             remaining_weight-=config[key]['weight']
                     
         split_weight = remaining_weight/len(remaining_keys)
+        
         if split_weight>=0.25:
             split_weight = 1/len(constant_keys+remaining_keys)
             for key in constant_keys+remaining_keys:
@@ -84,8 +93,6 @@ def preprocess_weights(config):
                 config[key]['weight']=split_weight
 
     return config
-
-import numpy as np
 
 def assign_weights(n, equal=False):
     if equal:
@@ -110,21 +117,68 @@ def assign_tag_weights(config):
     
     return config
 
-def increment_score(tags, weight, scores_obj, threshold=0.3):
-    if tags is not None:
-        for topic in scores_obj.keys():
-            topic_emb = get_embeddings(topic, miniLM_model, miniLM_tokenizer)
-            for tag in tags:
-                tag_emb = get_embeddings(tag, miniLM_model, miniLM_tokenizer)
-                score = get_similarity_score(topic_emb, tag_emb)
-                if score>threshold:
-                    scores_obj[topic]+=score*weight
+def increment_score(tags, weight, scores_obj, threshold=0.3, num_chunks=4):
+    if tags is None:
+        return scores_obj
+        
+    topics = list(scores_obj.keys())
+    
+    chunk_size = max(len(topics) // num_chunks, 1)
+    topic_chunks = [topics[i:i + chunk_size] for i in range(0, len(topics), chunk_size)]
+    
+    with ThreadPoolExecutor(max_workers=num_chunks) as executor:
+        topic_emb_futures = {
+            topic: executor.submit(get_embeddings, [topic], miniLM_model, miniLM_tokenizer)
+            for topic in topics
+        }
+        
+        tag_emb_futures = {
+            tag: executor.submit(get_embeddings, [tag], miniLM_model, miniLM_tokenizer)
+            for tag in tags
+        }
 
+        topic_embeddings = {
+            topic: future.result()[0]
+            for topic, future in topic_emb_futures.items()
+        }
+
+        tag_embeddings = {
+            tag: future.result()[0]
+            for tag, future in tag_emb_futures.items()
+        }
+    
+    with ThreadPoolExecutor(max_workers=num_chunks) as executor:
+        futures = []
+        for topic_chunk in topic_chunks:
+            future = executor.submit(process_chunk, topic_chunk,tags, topic_embeddings, tag_embeddings, weight, threshold)
+            futures.append(future)
+
+        for future in futures:
+            chunk_scores = future.result()
+            for topic, score in chunk_scores.items():
+                scores_obj[topic] += score
+                
     return scores_obj
 
-import copy
+def process_chunk(topics, tags, weight, threshold):
+    chunk_scores = {}
+    
+    topic_embeddings = get_embeddings(topics, miniLM_model, miniLM_tokenizer)
+    tag_embeddings = get_embeddings(tags, miniLM_model, miniLM_tokenizer)
+    
+    for topic in topics:
+        chunk_scores[topic] = 0
+        topic_emb = topic_embeddings[topic]
+        
+        for tag in tags:
+            tag_emb = tag_embeddings[tag]
+            score = get_similarity_score(topic_emb, tag_emb)
+            if score > threshold:
+                chunk_scores[topic] += score * weight
+                
+    return chunk_scores
 
-def get_recommended_topics(config, limit=5):
+def get_recommended_topics(config, limit=5, num_chunks=4):
     topics_scores = copy.deepcopy(initial_topics_scores)
     
     config = assign_tag_weights(preprocess_weights(config))
@@ -132,14 +186,12 @@ def get_recommended_topics(config, limit=5):
     for key in config.keys():
         if config[key]['type'] == 'multiple' and len(config[key]['tags'])>0:
             for tags, tag_weight in zip(config[key]['tags'], config[key]['tag_weights']):
-                topics_scores = increment_score(tags, config[key]['weight']*tag_weight, topics_scores)
+                topics_scores = increment_score(tags, config[key]['weight']*tag_weight, topics_scores, num_chunks=num_chunks)
         else:
-            topics_scores = increment_score(config[key]['tags'], config[key]['weight'], topics_scores)
+            topics_scores = increment_score(config[key]['tags'], config[key]['weight'], topics_scores, num_chunks=num_chunks)
     
     top_topics = sorted(topics_scores.items(), key=lambda item: item[1], reverse=True)[:limit]
     return top_topics
-
-from psycopg2 import sql
 
 def update_user_topics(conn, user_id, topics):
     cursor = conn.cursor()
@@ -148,13 +200,6 @@ def update_user_topics(conn, user_id, topics):
     cursor.execute(update_query, (topics_str, user_id))
     conn.commit()
     cursor.close()
-
-import numpy as np
-import json
-import subprocess
-import psycopg2
-import os
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -172,13 +217,16 @@ try:
 
     with open('data/topics.json', 'r') as f:
         configs = json.load(f)
+    
+    # Splitting data into 4 chunks, and processing the chunks parallelly
+    NUM_CHUNKS = 4
 
     for user_config in configs:
         for user_id, config in user_config.items():
-            topic_scores = get_recommended_topics(config, 4)
+            topic_scores = get_recommended_topics(config, 4, num_chunks=NUM_CHUNKS)
             topics = [topics for topics, score in topic_scores]
 
-            print(topics)
+            # print(topics)
             
             update_user_topics(conn, user_id, topics)
 

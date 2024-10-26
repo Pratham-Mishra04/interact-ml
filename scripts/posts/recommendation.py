@@ -2,15 +2,60 @@ import pandas as pd
 import numpy as np
 import json
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from sklearn.preprocessing import LabelEncoder
+import tensorflow as tf
+from keras.models import Model
+from keras.layers import Input,Dense,Embedding,Flatten,Input,concatenate
+from keras.regularizers import l2
+
 
 def logger(level , title, description, path):
     subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
+def extract_user_embeddings(model, user_le, df):
+    user_embeddings = {}
+
+    for enc_user_id in df['enc_user_id'].unique():
+        user_embedding = model.get_layer('user_emb')(np.array([enc_user_id]))
+        user_embedding = tf.keras.backend.flatten(user_embedding)
+        user_embedding = tf.expand_dims(user_embedding, axis=0)
+        user_dense = model.get_layer('user_dense')(user_embedding)
+        
+        user_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_dense.numpy().tolist()
+
+def extract_post_embeddings(model, post_le, df):
+    post_embeddings = {}
+
+    for enc_post_id in df['enc_post_id'].unique():
+        post_embedding = model.get_layer('post_emb')(np.array([enc_post_id]))
+        post_embedding = tf.keras.backend.flatten(post_embedding)
+        post_embedding = tf.expand_dims(post_embedding, axis=0)
+        post_dense = model.get_layer('post_dense')(post_embedding)
+        
+        post_embeddings[post_le.inverse_transform([enc_post_id])[0]] = post_dense.numpy().tolist()
+
+def extract_user_bias_embeddings(model, user_le, df):
+    user_bias_embeddings = {}
+
+    for enc_user_id in df['enc_user_id'].unique():
+        user_bias_embedding = model.get_layer('user_bias_emb')(np.array([enc_user_id]))
+        user_bias_embedding = tf.keras.backend.flatten(user_bias_embedding)
+
+        user_bias_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_bias_embedding.numpy().tolist()
+
+def extract_post_bias_embeddings(model, post_le, df):
+    post_bias_embeddings = {}
+
+    for enc_post_id in df['enc_post_id'].unique():
+        post_bias_embedding = model.get_layer('post_bias_emb')(np.array([enc_post_id]))
+        post_bias_embedding = tf.keras.backend.flatten(post_bias_embedding)
+        
+        post_bias_embeddings[post_le.inverse_transform([enc_post_id])[0]] = post_bias_embedding.numpy().tolist()
+
 try:
     #* Model Building
     df = pd.read_csv('data/post_scores.csv')
-
-    from sklearn.preprocessing import LabelEncoder
 
     user_le = LabelEncoder()
     df['enc_user_id'] = user_le.fit_transform(df['user_id'])
@@ -21,10 +66,7 @@ try:
     X = df[['enc_user_id', 'enc_post_id']]
     y = df['score']
 
-    import tensorflow as tf
-    from keras.models import Model
-    from keras.layers import Input,Dense,Embedding,Flatten,Input,concatenate
-    from keras.regularizers import l2
+    
 
     num_users = df['enc_user_id'].nunique()
     num_posts = df['enc_post_id'].nunique()
@@ -68,42 +110,17 @@ try:
 
     tf.keras.models.save_model(model, 'models/posts/recommendations.h5')
 
-    #* Saving Embeddings
-    user_embeddings = {}
+    # Saving Embeddings
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_user_emb = executor.submit(extract_user_embeddings, model, user_le, df)
+        future_post_emb = executor.submit(extract_post_embeddings, model, post_le, df)
+        future_user_bias = executor.submit(extract_user_bias_embeddings, model, user_le, df)
+        future_post_bias = executor.submit(extract_post_bias_embeddings, model, post_le, df)
 
-    for enc_user_id in df['enc_user_id'].unique():
-        user_embedding = model.get_layer('user_emb')(np.array([enc_user_id]))
-        user_embedding = tf.keras.backend.flatten(user_embedding)
-        user_embedding = tf.expand_dims(user_embedding, axis=0)
-        user_dense = model.get_layer('user_dense')(user_embedding)
-        
-        user_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_dense.numpy().tolist()
-
-    post_embeddings = {}
-
-    for enc_post_id in df['enc_post_id'].unique():
-        post_embedding = model.get_layer('post_emb')(np.array([enc_post_id]))
-        post_embedding = tf.keras.backend.flatten(post_embedding)
-        post_embedding = tf.expand_dims(post_embedding, axis=0)
-        post_dense = model.get_layer('post_dense')(post_embedding)
-        
-        post_embeddings[post_le.inverse_transform([enc_post_id])[0]] = post_dense.numpy().tolist()
-
-    user_bias_embeddings = {}
-
-    for enc_user_id in df['enc_user_id'].unique():
-        user_bias_embedding = model.get_layer('user_bias_emb')(np.array([enc_user_id]))
-        user_bias_embedding = tf.keras.backend.flatten(user_bias_embedding)
-
-        user_bias_embeddings[user_le.inverse_transform([enc_user_id])[0]] = user_bias_embedding.numpy().tolist()
-
-    post_bias_embeddings = {}
-
-    for enc_post_id in df['enc_post_id'].unique():
-        post_bias_embedding = model.get_layer('post_bias_emb')(np.array([enc_post_id]))
-        post_bias_embedding = tf.keras.backend.flatten(post_bias_embedding)
-        
-        post_bias_embeddings[post_le.inverse_transform([enc_post_id])[0]] = post_bias_embedding.numpy().tolist()
+        user_embeddings = future_user_emb.result()
+        post_embeddings = future_post_emb.result()
+        user_bias_embeddings = future_user_bias.result()
+        post_bias_embeddings = future_post_bias.result()
 
     with open('models/posts/user_embeddings.json', 'w') as f:
         json.dump(user_embeddings, f)
