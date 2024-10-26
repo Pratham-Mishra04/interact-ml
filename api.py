@@ -9,17 +9,17 @@ import controllers.applications as application_controllers
 import controllers.miscellaneous as miscellaneous_controllers
 import controllers.code_reviewer as code_review_controllers
 import os
-from typing import List
+from typing import Any, Dict, List
 from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModel
 from transformers import pipeline
 
-# import populate.main as populate
+import populate.main as populate
 
 load_dotenv()
 
-# if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
-#     populate.fill_dummies()
+if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
+    populate.fill_dummies()
 
 app = FastAPI()
 
@@ -58,6 +58,10 @@ class ApplicationScoreBody(BaseModel):
     organization_values_topics: List[str]
     years_of_experience: int
 
+class PostConfigBody(BaseModel):
+    template: str
+    config: Dict[str, Any]
+
 
 # miniLM_tokenizer = AutoTokenizer.from_pretrained(
 #     "sentence-transformers/all-MiniLM-L6-v2"
@@ -76,13 +80,13 @@ class ApplicationScoreBody(BaseModel):
 #     "image-classification", model="Falconsai/nsfw_image_detection"
 # )
 
-# topic_model_dir = "../../models/posts/topics"
+topic_model_dir = "../../models/posts/topics"
 
-# topics_bert_tokenizer = AutoTokenizer.from_pretrained(topic_model_dir)
-# topics_bert_model = AutoModel.from_pretrained(topic_model_dir)
+topics_bert_tokenizer = AutoTokenizer.from_pretrained(topic_model_dir)
+topics_bert_model = AutoModel.from_pretrained(topic_model_dir)
 
-# with open(f'{topic_model_dir}/mlb.pickle', 'rb') as f:
-#         topics_mlb=pickle.load(f)
+with open(f'{topic_model_dir}/mlb.pickle', 'rb') as f:
+        topics_mlb=pickle.load(f)
 
 # app.state.miniLM_tokenizer = miniLM_tokenizer
 # app.state.miniLM_model = miniLM_model
@@ -93,9 +97,9 @@ class ApplicationScoreBody(BaseModel):
 # app.state.roberta_sentiment_pipeline = roberta_sentiment_pipeline
 # app.state.falconai_image_pipeline = falconai_image_pipeline
 
-# app.state.topics_bert_tokenizer = topics_bert_tokenizer
-# app.state.topics_bert_model = topics_bert_model
-# app.state.topics_mlb = topics_mlb
+app.state.topics_bert_tokenizer = topics_bert_tokenizer
+app.state.topics_bert_model = topics_bert_model
+app.state.topics_mlb = topics_mlb
 
 
 @app.get("/ping/{input_text}")
@@ -133,9 +137,9 @@ async def recommend_posts(body: ReqBody):
     return post_controllers.recommend(body)
 
 
-# @app.post('/posts/topics')
-# async def recommend_posts(body:ContentBody, request: Request):
-#     return post_controllers.get_topics(body, request)
+@app.post('/posts/topics')
+async def recommend_posts(body:ContentBody, request: Request):
+    return post_controllers.get_topics(body, request)
 
 
 @app.post("/image_blur_hash")
@@ -156,6 +160,10 @@ async def check_toxicity(image: UploadFile, request: Request):
 @app.post("/code_review")
 async def code_review(body: CodeReviewBody):
     return code_review_controllers.review_code(body)
+
+@app.post("/generate_post")
+async def generate_post(post_config: PostConfigBody):
+    return miscellaneous_controllers.generate_post(post_config)
 
 
 if __name__ == "__main__":
