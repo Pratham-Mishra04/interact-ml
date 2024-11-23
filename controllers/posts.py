@@ -5,28 +5,37 @@ from tensorflow import newaxis
 import json
 import torch
 
-#* Post Recommendations
-model = load_model('models/posts/recommendations.h5')
+# * Post Recommendations
+model = load_model("models/posts/recommendations.h5")
 
-with open('models/posts/user_embeddings.json') as f:
+with open("models/posts/user_embeddings.json") as f:
     user_embeddings = json.load(f)
-with open('models/posts/post_embeddings.json') as f:
+with open("models/posts/post_embeddings.json") as f:
     post_embeddings = json.load(f)
-with open('models/posts/user_bias_embeddings.json') as f:
+with open("models/posts/user_bias_embeddings.json") as f:
     user_bias_embeddings = json.load(f)
-with open('models/posts/post_bias_embeddings.json') as f:
+with open("models/posts/post_bias_embeddings.json") as f:
     post_bias_embeddings = json.load(f)
 
+
 def predict_score(user_id, post_id):
+    if user_id not in user_embeddings or post_id not in post_embeddings:
+        return 0.0
+
+    if user_id not in user_bias_embeddings or post_id not in post_bias_embeddings:
+        return 0.0
+
     user_embedding = np.array(user_embeddings[user_id])
     post_embedding = np.array(post_embeddings[post_id])
 
     # Passing user embedding and movie embedding through the concat layer
-    concatenated_embeddings = model.get_layer('concat')([user_embedding, post_embedding])
+    concatenated_embeddings = model.get_layer("concat")(
+        [user_embedding, post_embedding]
+    )
 
     # Passing the concatenated embeddings through the dense layers
-    x = model.get_layer('dense1')(concatenated_embeddings)
-    x = model.get_layer('dense2')(x)
+    x = model.get_layer("dense1")(concatenated_embeddings)
+    x = model.get_layer("dense2")(x)
 
     user_bias_embedding = np.array(user_bias_embeddings[user_id])
     post_bias_embedding = np.array(post_bias_embeddings[post_id])
@@ -36,29 +45,46 @@ def predict_score(user_id, post_id):
 
     # Combine embeddings, biases, and pass through the output layer
     input_tensors = [x, user_bias_embedding, post_bias_embedding]
-    concatenated_features = model.get_layer('combined_features')(input_tensors)
-    
-    x = model.get_layer('combined_dense1')(concatenated_features)
-    x = model.get_layer('combined_dense2')(x)
-    
-    x = model.get_layer('output')(x)
+    concatenated_features = model.get_layer("combined_features")(input_tensors)
+
+    x = model.get_layer("combined_dense1")(concatenated_features)
+    x = model.get_layer("combined_dense2")(x)
+
+    x = model.get_layer("output")(x)
 
     predicted_rating = x[0][0]
     return predicted_rating.numpy()
 
+
 def recommend(body):
-    df = pd.read_csv('data/post_scores.csv')
-    user_ratings = df[df['user_id'] == body.id]
-    recommendation = df[~df['post_id'].isin(user_ratings['post_id'])][['post_id']].drop_duplicates()
-    recommendation['score_predict'] = recommendation.apply(lambda x: predict_score(body.id, x['post_id']), axis=1)
-    
-    final_rec = recommendation.sort_values(by='score_predict', ascending=False)
-    return {
-        'recommendations':final_rec['post_id'].values.tolist()
-    }
+    df = pd.read_csv("data/post_scores.csv")
+
+    user_ratings = df[df["user_id"] == body.id]
+
+    # Check if user_ratings is empty
+    if user_ratings.empty:
+        # Recommend all posts if no user ratings exist
+        recommendation = df[["post_id"]].drop_duplicates()
+    else:
+        recommendation = df[~df["post_id"].isin(user_ratings["post_id"])][
+            ["post_id"]
+        ].drop_duplicates()
+
+    # Predict scores for the recommended posts
+    recommendation["score_predict"] = recommendation.apply(
+        lambda x: predict_score(body.id, x["post_id"]), axis=1
+    )
+
+    # Sort recommendations by predicted scores
+    final_rec = recommendation.sort_values(by="score_predict", ascending=False)
+
+    # Return the recommended post IDs
+    return {"recommendations": final_rec["post_id"].values.tolist()}
+
 
 def preprocess(text):
     return text.lower()
+
 
 def get_topics(body, request):
     tokenizer = request.app.state.topics_bert_tokenizer
@@ -66,14 +92,16 @@ def get_topics(body, request):
     mlb = request.app.state.topics_mlb
 
     post = preprocess(body.content)
-    encoding = tokenizer(post, return_tensors="pt", truncation=True, padding=True, max_length=128)
-    
+    encoding = tokenizer(
+        post, return_tensors="pt", truncation=True, padding=True, max_length=128
+    )
+
     with torch.no_grad():
         outputs = model(**encoding)
     logits = outputs.logits
-    
+
     # Apply sigmoid activation to get probabilities
     probs = torch.sigmoid(logits).squeeze().cpu().numpy()
-    
+
     predicted_labels = [mlb.classes_[i] for i in range(len(probs)) if probs[i] >= 0.4]
     return predicted_labels

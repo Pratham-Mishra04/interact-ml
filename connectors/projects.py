@@ -6,24 +6,34 @@ import subprocess
 
 load_dotenv()
 
-def logger(level , title, description, path):
-    subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
+
+def logger(level, title, description, path):
+    subprocess.run(
+        ["python3", "api_logger.py", level, title, description, path], cwd="utils"
+    )
+
 
 try:
-    conn = psycopg2.connect(database=os.getenv("DB_NAME"),
-                            user=os.getenv("DB_USER"),
-                            password=os.getenv("DB_PASS"),
-                            host=os.getenv("DB_HOST"),
-                            port=os.getenv("DB_PORT"))
+    conn = psycopg2.connect(
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASS"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+    )
 
     cursor = conn.cursor()
 
-    cursor.execute('SELECT id, title, tagline, description, user_id, tags, category from projects')
+    cursor.execute(
+        "SELECT id, title, tagline, description, user_id, tags, category from projects"
+    )
 
-    projects=cursor.fetchall()
+    projects = cursor.fetchall()
 
-    writer = csv.writer(open("data/projects.csv", 'w'))
-    writer.writerow(["id", "title", "tagline", "description", "userID", "tags", "category"])
+    writer = csv.writer(open("data/projects.csv", "w"))
+    writer.writerow(
+        ["id", "title", "tagline", "description", "userID", "tags", "category"]
+    )
 
     for p in projects:
         id, title, tagline, description, userID, tags, category = p
@@ -40,33 +50,37 @@ try:
     #     user_project2rating[userID+' '+projectID]=1
 
     # Likes
-    cursor.execute('SELECT user_id, project_id from likes WHERE project_id IS NOT NULL')
-    likes=cursor.fetchall()
+    cursor.execute("SELECT user_id, project_id from likes WHERE project_id IS NOT NULL")
+    likes = cursor.fetchall()
 
     for i in likes:
         userID, projectID = i
-        user_project2rating[userID+' '+projectID]=2
+        user_project2rating[userID + " " + projectID] = 2
 
     # Messages
-    cursor.execute('SELECT user_id, project_id from messages WHERE project_id IS NOT NULL')
-    messages=cursor.fetchall()
+    cursor.execute(
+        "SELECT user_id, project_id from messages WHERE project_id IS NOT NULL"
+    )
+    messages = cursor.fetchall()
 
     for i in messages:
         userID, projectID = i
-        user_project2rating[userID+' '+projectID]=3
+        user_project2rating[userID + " " + projectID] = 3
 
     # Bookmarks
-    cursor.execute('''
+    cursor.execute(
+        """
                 SELECT pb.user_id, pbi.project_id
                 FROM project_bookmarks pb
                 JOIN project_bookmark_items pbi
                 ON pb.id = pbi.project_bookmark_id;
-                ''')
-    bookmark_items=cursor.fetchall()
+                """
+    )
+    bookmark_items = cursor.fetchall()
 
     for i in bookmark_items:
         userID, projectID = i
-        user_project2rating[userID+' '+projectID]=4
+        user_project2rating[userID + " " + projectID] = 4
 
     # # Dislikes
     # cursor.execute('SELECT user_id, project_id from dislikes WHERE project_id IS NOT NULL')
@@ -77,23 +91,29 @@ try:
     #     user_project2rating[userID+' '+projectID]=-1
 
     # Reports
-    cursor.execute('SELECT reporter_id, project_id from reports WHERE project_id IS NOT NULL')
-    reports=cursor.fetchall()
+    cursor.execute(
+        "SELECT reporter_id, project_id from reports WHERE project_id IS NOT NULL"
+    )
+    reports = cursor.fetchall()
 
     for i in reports:
         userID, projectID = i
-        user_project2rating[userID+' '+projectID]=-3
+        user_project2rating[userID + " " + projectID] = -3
 
-
-    writer = csv.writer(open("data/project_scores.csv", 'w'))
+    writer = csv.writer(open("data/project_scores.csv", "w"))
     writer.writerow(["user_id", "project_id", "score"])
 
     for i in user_project2rating:
-        user_id = i.split(' ')[0]
-        project_id = i.split(' ')[1]
+        user_id = i.split(" ")[0]
+        project_id = i.split(" ")[1]
         score = user_project2rating[i]
         writer.writerow([user_id, project_id, score])
 
-    logger("info",f"Training Successful", "Successfully fetched Projects", "connectors/projects.py")
+    logger(
+        "info",
+        f"Training Successful",
+        "Successfully fetched Projects",
+        "connectors/projects.py",
+    )
 except Exception as e:
-    logger("error",f"Training Failed", str(e), "connectors/projects.py")
+    logger("error", f"Training Failed", str(e), "connectors/projects.py")

@@ -23,3 +23,6 @@ BEGIN
     -- Enable all triggers (reset back to default)
     EXECUTE 'SET session_replication_role = DEFAULT';
 END $$;
+
+crontab -e
+0 0 */3 * * sudo docker exec interact-ml python3 trainer.py
