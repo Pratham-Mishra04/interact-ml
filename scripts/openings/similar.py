@@ -1,17 +1,21 @@
 import pandas as pd
 import subprocess
 
-def logger(level , title, description, path):
-    subprocess.run(['python3', 'api_logger.py', level, title, description, path], cwd='utils')
 
-try :
+def logger(level, title, description, path):
+    subprocess.run(
+        ["python3", "api_logger.py", level, title, description, path], cwd="../utils"
+    )
+
+
+try:
     # Importing Data
-    df = pd.read_csv('data/openings.csv')
+    df = pd.read_csv("data/openings.csv")
 
     # Converting to Lists
-    df['title']=df['title'].apply(lambda x:x.split())
-    df['description']=df['description'].apply(lambda x:x.split())
-    df['project_id']=df['project_id'].apply(lambda x:[x])
+    df["title"] = df["title"].apply(lambda x: x.split())
+    df["description"] = df["description"].apply(lambda x: x.split())
+    df["project_id"] = df["project_id"].apply(lambda x: [x])
 
     import ast
 
@@ -22,12 +26,13 @@ try :
         except:
             return obj
 
-    df['tags']=df['tags'].apply(parse)
+    df["tags"] = df["tags"].apply(parse)
 
-    df['keys']=df['title']+df['description']+df['tags']+df['project_id']
+    df["keys"] = df["title"] + df["description"] + df["tags"] + df["project_id"]
 
     import ssl
     import nltk
+
     try:
         _create_unverified_https_context = ssl._create_unverified_context
     except AttributeError:
@@ -45,34 +50,40 @@ try :
     from nltk import pos_tag, word_tokenize
     import string
 
-    ps=PorterStemmer()
+    ps = PorterStemmer()
 
     custom_stopwords = ["need", "want", "this", "that", "fast"]
 
     def stem(x):
         if not isinstance(x, list):
             return []
-        
+
         L = []
         for token in x:
             if isinstance(token, str):
                 tagged_token = pos_tag([token])
                 token = token.lower()
                 pos = tagged_token[0][1]
-                if pos not in {'JJ', 'JJR', 'JJS'} and token not in custom_stopwords:  # Remove adjectives
+                if (
+                    pos not in {"JJ", "JJR", "JJS"} and token not in custom_stopwords
+                ):  # Remove adjectives
                     stemmed_token = ps.stem(token)
-                    if stemmed_token not in L and stemmed_token not in stopwords.words("english") and stemmed_token not in string.punctuation:
+                    if (
+                        stemmed_token not in L
+                        and stemmed_token not in stopwords.words("english")
+                        and stemmed_token not in string.punctuation
+                    ):
                         L.append(stemmed_token)
-        return ' '.join(L)
+        return " ".join(L)
 
-    df.loc[:,'keys']=df['keys'].apply(stem)
-    df=df[['id','title','keys']]
+    df.loc[:, "keys"] = df["keys"].apply(stem)
+    df = df[["id", "title", "keys"]]
 
     # Calculating Similarities
     from sklearn.feature_extraction.text import CountVectorizer
 
     cv = CountVectorizer(max_features=5000)
-    vectors = cv.fit_transform(df['keys']).toarray()
+    vectors = cv.fit_transform(df["keys"]).toarray()
 
     from sklearn.metrics.pairwise import cosine_similarity
 
@@ -81,9 +92,14 @@ try :
     # Saving the Similarities
     import pickle
 
-    with open('models/openings/similarities.pickle', 'wb') as f:
+    with open("models/openings/similarities.pickle", "wb") as f:
         pickle.dump(similarities, f)
 
-    logger("info",f"Training Successful", "Successfully Trained Similar Openings", "scripts/openings/similar.py")
-except Exception as e :
-    logger("error",f"Training Failed", str(e), "scripts/openings/similar.py")
+    logger(
+        "info",
+        f"Training Successful",
+        "Successfully Trained Similar Openings",
+        "scripts/openings/similar.py",
+    )
+except Exception as e:
+    logger("error", f"Training Failed", str(e), "scripts/openings/similar.py")
