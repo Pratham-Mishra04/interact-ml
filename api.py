@@ -13,13 +13,14 @@ from typing import List
 from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModel
 from transformers import pipeline
+import traceback
 
-# import populate.main as populate
+import populate.main as populate
 
 load_dotenv()
 
-# if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
-#     populate.fill_dummies()
+if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
+    populate.fill_dummies()
 
 app = FastAPI()
 
@@ -105,32 +106,56 @@ def ping(input_text: str):
 
 @app.post("/projects/similar")
 async def similar_projects(body: ReqBody):
-    return project_controllers.similar(body)
+    try:
+        return project_controllers.similar(body)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/openings/similar")
 async def similar_openings(body: ReqBody):
-    return opening_controllers.similar(body)
+    try:
+        return opening_controllers.similar(body)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/openings/application_score")
 async def application_score(body: ApplicationScoreBody, request: Request):
-    return opening_controllers.get_application_score(body, request)
+    try:
+        return opening_controllers.get_application_score(body, request)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/openings/application_score2")
 async def application_score_test(body: ApplicationScoreBody, request: Request):
-    return application_controllers.get_application_score(body, request)
+    try:
+        return application_controllers.get_application_score(body, request)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/projects/recommend")
 async def recommend_projects(body: ReqBody):
-    return project_controllers.recommend(body)
+    try:
+        return project_controllers.recommend(body)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/posts/recommend")
 async def recommend_posts(body: ReqBody):
-    return post_controllers.recommend(body)
+    try:
+        return post_controllers.recommend(body)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 # @app.post('/posts/topics')
@@ -140,22 +165,38 @@ async def recommend_posts(body: ReqBody):
 
 @app.post("/image_blur_hash")
 async def get_blur_hash(image: UploadFile = File(...)):
-    return miscellaneous_controllers.generate_blurhash_data_url(image)
+    try:
+        return miscellaneous_controllers.generate_blurhash_data_url(image)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/toxicity")
 async def check_toxicity(body: ContentBody, request: Request):
-    return miscellaneous_controllers.check_toxicity(body, request)
+    try:
+        return miscellaneous_controllers.check_toxicity(body, request)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/image_profanity")
 async def check_toxicity(image: UploadFile, request: Request):
-    return miscellaneous_controllers.check_image_profanity(image, request)
+    try:
+        return miscellaneous_controllers.check_image_profanity(image, request)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 @app.post("/code_review")
 async def code_review(body: CodeReviewBody, request: Request):
-    return code_review_controllers.review_code(body, request)
+    try:
+        return code_review_controllers.review_code(body, request)
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        return {"status": "failed", "message": stack_trace}
 
 
 if __name__ == "__main__":
