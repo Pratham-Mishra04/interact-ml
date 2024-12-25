@@ -56,6 +56,7 @@ try:
     nltk.download("punkt")
     nltk.download("stopwords")
     nltk.download("averaged_perceptron_tagger")
+    nltk.download("averaged_perceptron_tagger_eng")
 
     # Stemming
     ps = PorterStemmer()
@@ -99,8 +100,6 @@ try:
     os.makedirs("models/projects", exist_ok=True)
     with open("models/projects/similarities.pickle", "wb") as f:
         pickle.dump(similarities, f)
-
-    os.remove(csv_path)
 
     print("------------- Successfully Trained Similar Projects -------------")
 

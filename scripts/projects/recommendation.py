@@ -155,8 +155,6 @@ try:
     with open("models/projects/project_bias_embeddings.json", "w") as f:
         json.dump(project_bias_embeddings, f)
 
-    os.remove(csv_path)
-
     print("------------- Successfully Trained Recommended Projects -------------")
 
     logger(

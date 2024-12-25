@@ -54,6 +54,7 @@ try:
     nltk.download("punkt")
     nltk.download("stopwords")
     nltk.download("averaged_perceptron_tagger")
+    nltk.download("averaged_perceptron_tagger_eng")
 
     # Stemming
     ps = PorterStemmer()
@@ -95,8 +96,6 @@ try:
     # Saving the Similarities
     with open("models/openings/similarities.pickle", "wb") as f:
         pickle.dump(similarities, f)
-
-    os.remove(csv_path)
 
     print("------------- Successfully Trained Similar Openings -------------")
 

@@ -150,8 +150,6 @@ try:
     with open("models/posts/post_bias_embeddings.json", "w") as f:
         json.dump(post_bias_embeddings, f)
 
-    os.remove(csv_path)
-
     print("------------- Successfully Trained Recommended Posts -------------")
 
     logger(

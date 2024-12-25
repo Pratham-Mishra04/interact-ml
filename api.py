@@ -14,12 +14,12 @@ from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModel
 from transformers import pipeline
 
-import populate.main as populate
+# import populate.main as populate
 
 load_dotenv()
 
-if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
-    populate.fill_dummies()
+# if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
+#     populate.fill_dummies()
 
 app = FastAPI()
 
