@@ -2,11 +2,14 @@ import pandas as pd
 import numpy as np
 import json
 import subprocess
+import os
 
 
 def logger(level, title, description, path):
+    utils_path = os.path.join(os.getcwd(), "utils")
+
     subprocess.run(
-        ["python3", "api_logger.py", level, title, description, path], cwd="../utils"
+        ["python3", "api_logger.py", level, title, description, path], cwd=utils_path
     )
 
 
