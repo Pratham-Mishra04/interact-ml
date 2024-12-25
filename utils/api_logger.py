@@ -87,12 +87,16 @@ def log_to_admin_logger(record):
         response = requests.post(LOGGER_URL, headers=headers, data=json_data)
 
         if response.status_code != 200:
-            pass
-            # error_logger.error(f"Title: Error Posting to Admin Logger, Description: {response.text}, Path: utils/api_logger.py")
+            print("Bad Request to Admin Logger:", response.text)
+            error_logger.error(
+                f"Title: Error Posting to Admin Logger, Description: {response.text}, Path: utils/api_logger.py"
+            )
 
     except Exception as e:
-        pass
-        # error_logger.error(f"Title: Error Posting to Admin Logger, Description: {str(e)}, Path: utils/api_logger.py")
+        print(str(e))
+        error_logger.error(
+            f"Title: Error Posting to Admin Logger, Description: {str(e)}, Path: utils/api_logger.py"
+        )
 
 
 if __name__ == "__main__":

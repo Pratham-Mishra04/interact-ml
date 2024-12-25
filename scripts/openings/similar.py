@@ -23,7 +23,8 @@ def logger(level, title, description, path):
 
 try:
     # Importing Data
-    df = pd.read_csv("data/openings.csv")
+    csv_path = "data/openings.csv"
+    df = pd.read_csv(csv_path)
 
     # Converting to Lists
     df["title"] = df["title"].apply(lambda x: x.split())
@@ -93,6 +94,10 @@ try:
     with open("models/openings/similarities.pickle", "wb") as f:
         pickle.dump(similarities, f)
 
+    os.remove(csv_path)
+
+    print("------------- Successfully Trained Similar Openings -------------")
+
     logger(
         "info",
         "Training Successful",
@@ -101,4 +106,6 @@ try:
     )
 except Exception as e:
     error_message = f"Error: {str(e)} \n Traceback: {traceback.format_exc()}"
+    print(error_message)
+
     logger("error", "Training Failed", error_message, "scripts/openings/similar.py")

@@ -240,7 +240,8 @@ try:
         port=os.getenv("DB_PORT"),
     )
 
-    with open("data/topics.json", "r") as f:
+    json_path = "data/topics.json"
+    with open(json_path, "r") as f:
         configs = json.load(f)
 
     from concurrent.futures import ThreadPoolExecutor
@@ -263,6 +264,10 @@ try:
 
     conn.close()
 
+    os.remove(json_path)
+
+    print("------------- Successfully Trained Topics for Users -------------")
+
     logger(
         "info",
         f"Training Successful",
@@ -271,4 +276,6 @@ try:
     )
 except Exception as e:
     error_message = f"Error: {str(e)} \n Traceback: {traceback.format_exc()}"
+    print(error_message)
+
     logger("error", f"Training Failed", error_message, "scripts/topics.py")

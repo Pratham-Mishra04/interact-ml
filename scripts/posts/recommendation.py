@@ -19,7 +19,8 @@ def logger(level, title, description, path):
 
 try:
     # * Model Building
-    df = pd.read_csv("data/post_scores.csv")
+    csv_path = "data/post_scores.csv"
+    df = pd.read_csv(csv_path)
 
     from sklearn.preprocessing import LabelEncoder
 
@@ -149,6 +150,10 @@ try:
     with open("models/posts/post_bias_embeddings.json", "w") as f:
         json.dump(post_bias_embeddings, f)
 
+    os.remove(csv_path)
+
+    print("------------- Successfully Trained Recommended Posts -------------")
+
     logger(
         "info",
         f"Training Successful",
@@ -157,6 +162,8 @@ try:
     )
 except Exception as e:
     error_message = f"Error: {str(e)} \n Traceback: {traceback.format_exc()}"
+    print(error_message)
+
     logger(
         "error", f"Training Failed", error_message, "scripts/posts/recommendation.py"
     )
