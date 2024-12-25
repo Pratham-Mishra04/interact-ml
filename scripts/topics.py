@@ -1,6 +1,9 @@
 from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
+import traceback
+
+max_threads = 4
 
 
 # Mean Pooling - Take attention mask into account for correct averaging
@@ -22,7 +25,10 @@ miniLM_tokenizer = AutoTokenizer.from_pretrained(
 )
 miniLM_model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 
+from functools import lru_cache
 
+
+@lru_cache(maxsize=None)
 def get_embeddings(sentences, model, tokenizer):
     # Tokenize sentences
     encoded_input = tokenizer(
@@ -137,17 +143,34 @@ def assign_tag_weights(config):
     return config
 
 
+from concurrent.futures import ThreadPoolExecutor
+
+
 def increment_score(tags, weight, scores_obj, threshold=0.3):
     if tags is not None:
-        for topic in scores_obj.keys():
-            topic_emb = get_embeddings(topic, miniLM_model, miniLM_tokenizer)
-            for tag in tags:
-                tag_emb = get_embeddings(tag, miniLM_model, miniLM_tokenizer)
-                score = get_similarity_score(topic_emb, tag_emb)
-                if score > threshold:
-                    scores_obj[topic] += score * weight
-
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            results = list(
+                executor.map(
+                    lambda tag: compute_score(tag, scores_obj, weight, threshold), tags
+                )
+            )
+        # Combine the scores from all parallel tasks
+        for updated_scores in results:
+            for topic, score in updated_scores.items():
+                scores_obj[topic] += score
     return scores_obj
+
+
+def compute_score(tag, scores_obj, weight, threshold):
+    """Compute the similarity score for a single tag."""
+    temp_scores = {key: 0 for key in scores_obj.keys()}
+    for topic in scores_obj.keys():
+        topic_emb = get_embeddings(topic, miniLM_model, miniLM_tokenizer)
+        tag_emb = get_embeddings(tag, miniLM_model, miniLM_tokenizer)
+        score = get_similarity_score(topic_emb, tag_emb)
+        if score > threshold:
+            temp_scores[topic] += score * weight
+    return temp_scores
 
 
 import copy
@@ -180,11 +203,12 @@ def get_recommended_topics(config, limit=5):
 from psycopg2 import sql
 
 
-def update_user_topics(conn, user_id, topics):
+def batch_update_user_topics(conn, user_topics):
     cursor = conn.cursor()
-    topics_str = "{" + ",".join(f'"{topic}"' for topic in topics) + "}"
-    update_query = sql.SQL("UPDATE users SET topics = %s WHERE id = %s")
-    cursor.execute(update_query, (topics_str, user_id))
+    for user_id, topics in user_topics:
+        topics_str = "{" + ",".join(f'"{topic}"' for topic in topics) + "}"
+        update_query = sql.SQL("UPDATE users SET topics = %s WHERE id = %s")
+        cursor.execute(update_query, (topics_str, user_id))
     conn.commit()
     cursor.close()
 
@@ -216,17 +240,26 @@ try:
         port=os.getenv("DB_PORT"),
     )
 
-    cursor = conn.cursor()
-
     with open("data/topics.json", "r") as f:
         configs = json.load(f)
 
-    for user_config in configs:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def process_user_config(user_config):
+        """Process a single user's configuration to get recommended topics."""
+        results = []
         for user_id, config in user_config.items():
             topic_scores = get_recommended_topics(config, 4)
             topics = [topics for topics, score in topic_scores]
+            results.append((user_id, topics))
+        return results
 
-            update_user_topics(conn, user_id, topics)
+    # Parallelize processing of user configurations
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        all_user_topics = list(executor.map(process_user_config, configs))
+
+    flattened_user_topics = [item for sublist in all_user_topics for item in sublist]
+    batch_update_user_topics(conn, flattened_user_topics)
 
     conn.close()
 
@@ -237,5 +270,5 @@ try:
         "scripts/topics.py",
     )
 except Exception as e:
-    print(e)
-    logger("error", f"Training Failed", str(e), "scripts/topics.py")
+    error_message = f"Error: {str(e)} \n Traceback: {traceback.format_exc()}"
+    logger("error", f"Training Failed", error_message, "scripts/topics.py")

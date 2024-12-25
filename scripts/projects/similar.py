@@ -1,11 +1,23 @@
 import pandas as pd
 import subprocess
 import os
+from concurrent.futures import ThreadPoolExecutor
+import ssl
+import nltk
+from nltk.stem.porter import PorterStemmer
+from nltk.corpus import stopwords
+from nltk import pos_tag
+import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import pickle
+import traceback
+
+max_threads = 4
 
 
 def logger(level, title, description, path):
     utils_path = os.path.join(os.getcwd(), "utils")
-
     subprocess.run(
         ["python3", "api_logger.py", level, title, description, path], cwd=utils_path
     )
@@ -30,12 +42,9 @@ try:
             return obj
 
     df["tags"] = df["tags"].apply(parse)
-
     df["keys"] = df["tagline"] + df["description"] + df["tags"] + df["category"]
 
-    import ssl
-    import nltk
-
+    # Setup NLTK
     try:
         _create_unverified_https_context = ssl._create_unverified_context
     except AttributeError:
@@ -48,13 +57,9 @@ try:
     nltk.download("averaged_perceptron_tagger")
 
     # Stemming
-    from nltk.stem.porter import PorterStemmer
-    from nltk.corpus import stopwords
-    from nltk import pos_tag, word_tokenize
-    import string
-
     ps = PorterStemmer()
-
+    stop_words = set(stopwords.words("english"))
+    punctuation_set = set(string.punctuation)
     custom_stopwords = ["need", "want", "this", "that", "fast"]
 
     def stem(x):
@@ -63,44 +68,41 @@ try:
         for token, pos in tagged_tokens:
             token = token.lower()
             if (
-                pos != "JJ"
-                and pos != "JJR"
-                and pos != "JJS"
+                pos not in {"JJ", "JJR", "JJS"}  # Adjective tags
                 and token not in custom_stopwords
-            ):  # Remove adjectives
+                and token not in stop_words
+                and token not in punctuation_set
+            ):
                 stemmed_token = ps.stem(token)
-                if (
-                    stemmed_token not in L
-                    and stemmed_token not in stopwords.words("english")
-                    and stemmed_token not in string.punctuation
-                ):
+                if stemmed_token not in L:
                     L.append(stemmed_token)
         return " ".join(L)
 
-    df.loc[:, "keys"] = df["keys"].apply(stem)
+    # Parallelized Stemming
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        keys = list(executor.map(stem, df["keys"].tolist()))
+
+    df["keys"] = keys
     df = df[["id", "title", "keys"]]
 
     # Calculating Similarities
-    from sklearn.feature_extraction.text import CountVectorizer
-
-    cv = CountVectorizer(max_features=5000)
+    cv = TfidfVectorizer(max_features=5000)
     vectors = cv.fit_transform(df["keys"]).toarray()
-
-    from sklearn.metrics.pairwise import cosine_similarity
 
     similarities = cosine_similarity(vectors)
 
-    # Saving the Similarities
-    import pickle
-
+    # Ensure directory exists before saving
+    os.makedirs("models/projects", exist_ok=True)
     with open("models/projects/similarities.pickle", "wb") as f:
         pickle.dump(similarities, f)
 
     logger(
         "info",
-        f"Training Successful",
+        "Training Successful",
         "Successfully Trained Similar Projects",
         "scripts/projects/similar.py",
     )
+
 except Exception as e:
-    logger("error", f"Training Failed", str(e), "scripts/projects/similar.py")
+    error_message = f"Error: {str(e)} \n Traceback: {traceback.format_exc()}"
+    logger("error", "Training Failed", error_message, "scripts/projects/similar.py")

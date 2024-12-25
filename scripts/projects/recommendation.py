@@ -3,6 +3,10 @@ import numpy as np
 import json
 import subprocess
 import os
+from concurrent.futures import ThreadPoolExecutor
+import traceback
+
+max_threads = 4
 
 
 def logger(level, title, description, path):
@@ -30,8 +34,9 @@ try:
 
     import tensorflow as tf
     from keras.models import Model
-    from keras.layers import Input, Dense, Embedding, Flatten, Input, concatenate
+    from keras.layers import Input, Dense, Embedding, Flatten, concatenate
     from keras.regularizers import l2
+    from keras.callbacks import EarlyStopping
 
     num_users = df["enc_user_id"].nunique()
     num_projects = df["enc_project_id"].nunique()
@@ -49,7 +54,6 @@ try:
     p = Dense(8, activation="relu", name="project_dense")(p)
 
     x = concatenate([u, p], name="concat")
-    # x = Dropout(0.1, name='drop1')(x)
     x = Dense(16, activation="relu", name="dense1")(x)
     x = Dense(4, activation="relu", name="dense2")(x)
 
@@ -74,57 +78,68 @@ try:
         optimizer=tf.keras.optimizers.legacy.Adam(0.001), loss="mean_squared_error"
     )
 
+    early_stopping = EarlyStopping(
+        monitor="loss", patience=10, restore_best_weights=True
+    )
+
     history = model.fit(
-        x=[X["enc_user_id"], X["enc_project_id"]], y=y, epochs=200, verbose=0
+        x=[X["enc_user_id"], X["enc_project_id"]],
+        y=y,
+        epochs=200,
+        verbose=0,
+        callbacks=[early_stopping],
     )
 
     tf.keras.models.save_model(model, "models/projects/recommendations.h5")
 
     # * Saving Embeddings
-    user_embeddings = {}
-
-    for enc_user_id in df["enc_user_id"].unique():
+    def get_user_embedding(enc_user_id):
         user_embedding = model.get_layer("user_emb")(np.array([enc_user_id]))
         user_embedding = tf.keras.backend.flatten(user_embedding)
         user_embedding = tf.expand_dims(user_embedding, axis=0)
         user_dense = model.get_layer("user_dense")(user_embedding)
+        return user_le.inverse_transform([enc_user_id])[0], user_dense.numpy().tolist()
 
-        user_embeddings[user_le.inverse_transform([enc_user_id])[0]] = (
-            user_dense.numpy().tolist()
-        )
-
-    project_embeddings = {}
-
-    for enc_project_id in df["enc_project_id"].unique():
+    def get_project_embedding(enc_project_id):
         project_embedding = model.get_layer("project_emb")(np.array([enc_project_id]))
         project_embedding = tf.keras.backend.flatten(project_embedding)
         project_embedding = tf.expand_dims(project_embedding, axis=0)
         project_dense = model.get_layer("project_dense")(project_embedding)
-
-        project_embeddings[project_le.inverse_transform([enc_project_id])[0]] = (
-            project_dense.numpy().tolist()
+        return (
+            project_le.inverse_transform([enc_project_id])[0],
+            project_dense.numpy().tolist(),
         )
 
-    user_bias_embeddings = {}
-
-    for enc_user_id in df["enc_user_id"].unique():
+    def get_user_bias_embedding(enc_user_id):
         user_bias_embedding = model.get_layer("user_bias_emb")(np.array([enc_user_id]))
         user_bias_embedding = tf.keras.backend.flatten(user_bias_embedding)
-
-        user_bias_embeddings[user_le.inverse_transform([enc_user_id])[0]] = (
-            user_bias_embedding.numpy().tolist()
+        return (
+            user_le.inverse_transform([enc_user_id])[0],
+            user_bias_embedding.numpy().tolist(),
         )
 
-    project_bias_embeddings = {}
-
-    for enc_project_id in df["enc_project_id"].unique():
+    def get_project_bias_embedding(enc_project_id):
         project_bias_embedding = model.get_layer("project_bias_emb")(
             np.array([enc_project_id])
         )
         project_bias_embedding = tf.keras.backend.flatten(project_bias_embedding)
+        return (
+            project_le.inverse_transform([enc_project_id])[0],
+            project_bias_embedding.numpy().tolist(),
+        )
 
-        project_bias_embeddings[project_le.inverse_transform([enc_project_id])[0]] = (
-            project_bias_embedding.numpy().tolist()
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        user_embeddings = dict(
+            executor.map(get_user_embedding, df["enc_user_id"].unique())
+        )
+        project_embeddings = dict(
+            executor.map(get_project_embedding, df["enc_project_id"].unique())
+        )
+        user_bias_embeddings = dict(
+            executor.map(get_user_bias_embedding, df["enc_user_id"].unique())
+        )
+        project_bias_embeddings = dict(
+            executor.map(get_project_bias_embedding, df["enc_project_id"].unique())
         )
 
     with open("models/projects/user_embeddings.json", "w") as f:
@@ -146,4 +161,7 @@ try:
         "scripts/projects/recommendation.py",
     )
 except Exception as e:
-    logger("error", f"Training Failed", str(e), "scripts/projects/recommendation.py")
+    error_message = f"Error: {str(e)} \n Traceback: {traceback.format_exc()}"
+    logger(
+        "error", f"Training Failed", error_message, "scripts/projects/recommendation.py"
+    )
