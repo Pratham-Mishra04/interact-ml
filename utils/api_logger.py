@@ -9,7 +9,7 @@ import sys
 
 load_dotenv()
 
-LOGGER_URL = "http://localhost:5005/logger/api"
+LOGGER_URL = os.getenv("LOGGER_URL")
 LOGGER_SECRET = os.getenv("LOGGER_SECRET")
 LOGGER_TOKEN = os.getenv("LOGGER_TOKEN")
 ML_URL = os.getenv("ML_URL")
