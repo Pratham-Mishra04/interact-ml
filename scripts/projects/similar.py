@@ -79,7 +79,10 @@ try:
                     L.append(stemmed_token)
         return " ".join(L)
 
-    # Parallelized Stemming
+    # Ensure all values in the "keys" column are valid lists
+    df["keys"] = df["keys"].fillna("").apply(lambda x: x if isinstance(x, list) else [])
+
+    # Parallelized stemming using ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
         keys = list(executor.map(stem, df["keys"].tolist()))
 

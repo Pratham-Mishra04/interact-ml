@@ -2,11 +2,14 @@ import json
 import requests
 import jwt
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 import os
 import logging
 import sys
 
-LOGGER_URL = os.getenv("LOGGER_URL")
+load_dotenv()
+
+LOGGER_URL = "http://localhost:5005/logger/api"
 LOGGER_SECRET = os.getenv("LOGGER_SECRET")
 LOGGER_TOKEN = os.getenv("LOGGER_TOKEN")
 ML_URL = os.getenv("ML_URL")
@@ -106,6 +109,12 @@ if __name__ == "__main__":
         "description": sys.argv[3] if len(sys.argv) > 3 else "",
         "path": sys.argv[4] if len(sys.argv) > 4 else "",
     }
+
+    # Validate that all fields are strings
+    for field, value in record.items():
+        if not isinstance(value, str):
+            print(f"Field '{field}' has an invalid type.")
+            print(f"Actual type: {type(value).__name__}, Expected type: str")
 
     log_to_admin_logger(record)
 

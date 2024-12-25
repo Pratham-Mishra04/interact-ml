@@ -90,6 +90,8 @@ try:
     # Similarity Calculation
     similarities = cosine_similarity(vectors)
 
+    # Ensure directory exists before saving
+    os.makedirs("models/openings", exist_ok=True)
     # Saving the Similarities
     with open("models/openings/similarities.pickle", "wb") as f:
         pickle.dump(similarities, f)
