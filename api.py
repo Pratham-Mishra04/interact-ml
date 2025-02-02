@@ -15,11 +15,11 @@ from transformers import AutoTokenizer, AutoModel
 from transformers import pipeline
 import traceback
 
-import populate.main as populate
-
 load_dotenv()
 
 if os.getenv("POPULATE") == "TRUE" and os.getenv("ENV") == "development":
+    import populate.main as populate
+
     populate.fill_dummies()
 
 app = FastAPI()

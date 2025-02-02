@@ -76,6 +76,7 @@ def send_callback(callback_url, result):
         BACKEND_SECRET = os.getenv("BACKEND_SECRET")
         BACKEND_TOKEN = os.getenv("BACKEND_TOKEN")
         ML_URL = os.getenv("ML_URL")
+        API_TOKEN = os.getenv("API_TOKEN")
 
         if not BACKEND_SECRET or not BACKEND_TOKEN:
             logger(
@@ -101,6 +102,7 @@ def send_callback(callback_url, result):
             "Content-Type": "application/json",
             "api-token": BACKEND_TOKEN,
             "Origin": ML_URL,
+            "X-Api-Key": API_TOKEN,
         }
 
         response = requests.post(callback_url, json=result, headers=headers)
