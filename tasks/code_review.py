@@ -55,6 +55,13 @@ def process_code_review_async(repos, cloneRepoPath, callback_url):
         # Clean up cloned repos
         repo_manager.complete_cleanup()
 
+        logger(
+            "info",
+            "Code Review completed.",
+            f"Successfully completed code review for repos: {successful_repos}",
+            "review_code",
+        )
+
         results = []
         for i in range(len(successful_repos)):
             try:
